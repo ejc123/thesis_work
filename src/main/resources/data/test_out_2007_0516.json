@@ -1,0 +1,1 @@
+{ "layer": "test_out_2007_0516", "type": "arg", "datatype": "float64", "rows": 1547, "cols": 2311, "xmin": 618360.0, "ymax": 5334030.0, "cellwidth": 30.0, "cellheight": 30.0, "xmax": 687690.0, "ymin": 5287620.0, "xskew": 0.0, "yskew": 0.0, "epsg": 32614 }

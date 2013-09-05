@@ -1,0 +1,12 @@
+{
+ "catalog": "Test GeoData Catalog",
+ "stores": [
+  {
+   "store": "data:fs",
+   "params": {
+     "type": "fs",
+     "path": "src/main/resources/data"
+   }
+  }
+ ]
+}
