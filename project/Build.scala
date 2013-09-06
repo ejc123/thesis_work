@@ -19,6 +19,8 @@ object MyBuild extends Build {
 
     mainClass in (Compile, run) := Some("geotrellis.rest.WebRunner"),
 
+    javaOptions in run += "-Xmx8G",
+
     libraryDependencies ++= Seq(
       "junit" % "junit" % "4.5" % "test",
       "org.eclipse.jetty" % "jetty-webapp" % "8.1.0.RC4",

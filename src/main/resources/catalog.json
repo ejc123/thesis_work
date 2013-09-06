@@ -5,7 +5,7 @@
    "store": "data:fs",
    "params": {
      "type": "fs",
-     "path": "src/main/resources/data"
+     "path": "/home/ejc/geotrellis/data"
    }
   }
  ]
