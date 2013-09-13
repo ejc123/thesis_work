@@ -19,7 +19,7 @@ object MyBuild extends Build {
 
       parallelExecution := false,
 
-    mainClass in run := Some("geotrellis.rest.WebRunner"),
+    mainClass in (Compile,run) := Some("geotrellis.rest.WebRunner"),
 
       javaOptions in run += "-Xmx8G",
 
@@ -41,7 +41,8 @@ object MyBuild extends Build {
         "Scala Test" at "http://www.scala-tools.org/repo-reloases/",
         "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
         "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository",
-        "sonatypeSnapshots" at "http://oss.sonatype.org/content/repositories/snapshots"
+        "sonatypeSnapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
+        "Geotools" at "http://download.osgeo.org/webdav/geotools/"
       ),
 
       // enable forking in run
