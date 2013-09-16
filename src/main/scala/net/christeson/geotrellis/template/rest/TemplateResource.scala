@@ -49,6 +49,7 @@ object Demo {
 */
 }
 
+/*
 case class hist(r: Op[Histogram]) extends Operation[Array[Int]] {
   def _run(context: geotrellis.Context) = runAsync(r :: Nil)
 
@@ -68,7 +69,6 @@ case class RasterColRows(r: Op[Raster]) extends Operation[(Int,Int)] {
   }
 }
 
-/*
 object response {
   def apply(mime: String)(data: Any) = Response.ok(data).`type`(mime).build()
 }
@@ -84,6 +84,8 @@ object RunMe {
     val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
     println("Size: " + geoms.length)
     for (g <- geoms.take(10)) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
+    println("Done")
+    exit
   }
 }
 /*
