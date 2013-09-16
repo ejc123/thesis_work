@@ -1,8 +1,8 @@
 package net.christeson.geotrellis.template
 
-import javax.servlet.http.HttpServletRequest
-import javax.ws.rs._
-import javax.ws.rs.core.{Context, Response}
+// import javax.servlet.http.HttpServletRequest
+// import javax.ws.rs._
+// import javax.ws.rs.core.{Context, Response}
 
 import geotrellis._
 import geotrellis.data.ColorRamps._
@@ -25,7 +25,7 @@ import geotrellis.statistics.Histogram
  */
 object Demo {
   val server = Server("demo") //, "catalog.json")
-
+/*
   def infoPage(cols: Int, rows: Int, ms: Long, url: String, tree: String) = """
   <html>
   <head>
@@ -46,7 +46,7 @@ object Demo {
 
   </body>
   </html>""" format(cols, rows, cols * rows, ms, url, tree)
-
+*/
 }
 
 case class hist(r: Op[Histogram]) extends Operation[Array[Int]] {
@@ -68,10 +68,25 @@ case class RasterColRows(r: Op[Raster]) extends Operation[(Int,Int)] {
   }
 }
 
+/*
 object response {
   def apply(mime: String)(data: Any) = Response.ok(data).`type`(mime).build()
 }
+*/
+object RunMe {
+  def main(args: Array[String]): Unit = {
+    val path = "/home/ejc/geotrellis/data/2007_field_boundary.geojson"
+    val f = scala.io.Source.fromFile(path)
+    val geoJson = f.mkString
+    f.close
 
+
+    val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
+    println("Size: " + geoms.length)
+    for (g <- geoms.take(10)) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
+  }
+}
+/*
 @Path("/draw")
 class Draw {
   @GET
@@ -99,7 +114,7 @@ class Draw {
     val breaksOp = stat.GetColorBreaks(histogramOp, Literal(ClassificationBoldLandUse.toArray))
     val pngOp = io.RenderPng(rasterOp, breaksOp, histogramOp, Literal(2))
     // val pngOp = io.SimpleRenderPng(rasterOp,BlueToRed)
-
+*/
     /*
     val img = Demo.server.run(pngOp)
     response("image/png")(img)
@@ -112,12 +127,14 @@ class Draw {
       case _ => println("An Error Occurred")
     }
 */
+/*
     val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
     println("Size: " + geoms.length)
     for (g <- geoms.take(10)) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
        //for(g <- geoms) yield {
        //   println("Geometry Type: " + g.toString)
        //}
+       */
     /*
     val points =
         (for(g <- geoms) yield {
@@ -125,7 +142,7 @@ class Draw {
         }).toSeq
 
      */
-    Response.ok("Loaded Json File").build()
+    // Response.ok("Loaded Json File").build()
     /*
     Demo.server.getResult(vectorOp) match {
 
@@ -178,5 +195,5 @@ class Draw {
       case Error(msg, trace) => Response.ok("failed: %s\ntrace:\n%s".format(msg, trace)).build()
     }
     */
-  }
-}
+//  }
+//}

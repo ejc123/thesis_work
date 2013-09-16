@@ -5,6 +5,9 @@ import AssemblyKeys._
 
 object MyBuild extends Build {
 
+  // "com.azavea.geotrellis" %% "geotrellis-server" % "0.9.0-SNAPSHOT" % "compile",
+  // "org.eclipse.jetty" % "jetty-webapp" % "8.1.0.RC4",
+  // "com.sun.jersey" % "jersey-bundle" % "1.11",
   lazy val sharedSettings = Defaults.defaultSettings ++ Seq(
       //organization := "org.sample.demo",
 
@@ -27,10 +30,7 @@ object MyBuild extends Build {
         "com.azavea.geotrellis" %% "geotrellis-geotools" % "0.9.0-SNAPSHOT" % "compile",
         "com.azavea.geotrellis" %% "geotrellis-tasks" % "0.9.0-SNAPSHOT" % "compile",
         "com.azavea.geotrellis" %% "geotrellis" % "0.9.0-SNAPSHOT" % "compile",
-        "com.azavea.geotrellis" %% "geotrellis-server" % "0.9.0-SNAPSHOT" % "compile",
         "junit" % "junit" % "4.5" % "test",
-        "org.eclipse.jetty" % "jetty-webapp" % "8.1.0.RC4",
-        "com.sun.jersey" % "jersey-bundle" % "1.11",
         "org.scalatest"  %% "scalatest"  % "1.9.1" % "test"
       ),
 
@@ -50,7 +50,7 @@ object MyBuild extends Build {
     )
 
     lazy val localAssembly = assemblySettings ++ Seq(
-        mainClass in assembly := Some("geotrellis.rest.WebRunner"),
+        mainClass in assembly := Some("net.christeson.geotrellis.template.RunMe"),
         mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
           {
             case x if x startsWith "org/apache/commons/collections" => MergeStrategy.first
