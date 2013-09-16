@@ -15,10 +15,13 @@ import geotrellis.process.Error
 import geotrellis.process.Complete
 
 import com.vividsolutions.jts.{ geom => jts}
-import geotrellis.feature.Point
+import geotrellis.feature.{Polygon, Point}
+import geotrellis.data.{ReadState, FileReader}
+import java.io.BufferedReader
+import geotrellis.feature.rasterize.Callback
 
 //import scala.math._
-import geotrellis.statistics.Histogram
+import geotrellis.statistics.{ArrayHistogram, Histogram}
 
 /**
  * Simple hello world rest service that responds to "/hello"
@@ -74,18 +77,47 @@ object response {
 }
 */
 object RunMe {
-  def main(args: Array[String]): Unit = {
-    val path = "/home/ejc/geotrellis/data/2007_field_boundary.geojson"
-    val f = scala.io.Source.fromFile(path)
-    val geoJson = f.mkString
-    f.close
+  /*
+  def featureStats(data,feat) = {
+    val a = new ArrayHistogram()
+    feature.rasterize.Rasterizer.foreachCellByFeature(feat, data: RasterExtent) (
+      new Callback[feature.Polygon,Int] {def apply(col: Int, row: Int, geom: feature.Polygon[Int] => a.countItem(data.get(col,row)))
+    }
+    a.generateStatistics
+    }
 
+  }
+  */
+  def main(args: Array[String]): Unit = {
+    val path = "file:///home/ejc/geotrellis/data/2007_field_boundary.geojson"
+    import scalax.io.Resource
+    import scala.util.Random
+    // val f = scala.io.Source.fromFile(path)
+    implicit val codec = scalax.io.Codec.UTF8
+    val resource = Resource.fromURL(path).chars
+    val geoJson = resource.mkString
 
     val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
     println("Size: " + geoms.length)
-    for (g <- geoms.take(10)) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
-    println("Done")
-    exit
+    val tenPercent = Random.shuffle(geoms.toList).take((geoms.length*.10).toInt)// for (g <- Random.shuffle(geoms.toList).take((geoms.length*.10).toInt).par) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
+//     println("Done")
+    val rasterOp: Op[Raster] = io.LoadRaster("ltm7_clean_2007_0625")
+
+
+    var tile = Map[RasterExtent,statistics.Histogram]()
+    val poly = for (g <- tenPercent.take(1) ) yield Polygon(g.geom,0)
+
+    val histOp = geotrellis.raster.op.zonal.summary.Histogram(rasterOp,poly.head,tile)
+    Demo.server.getResult(histOp) match {
+      case Complete(foo,_) => {
+println("Hist: " + foo.getTotalCount())
+      }
+      case _ => "Error"
+    }
+
+    // for (g <- tenPercent) yield  feature.rasterize.Rasterizer.foreachCellByFeature(g,rasterOp)
+
+    sys.exit()
   }
 }
 /*

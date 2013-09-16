@@ -31,7 +31,9 @@ object MyBuild extends Build {
         "com.azavea.geotrellis" %% "geotrellis-tasks" % "0.9.0-SNAPSHOT" % "compile",
         "com.azavea.geotrellis" %% "geotrellis" % "0.9.0-SNAPSHOT" % "compile",
         "junit" % "junit" % "4.5" % "test",
-        "org.scalatest"  %% "scalatest"  % "1.9.1" % "test"
+        "org.scalatest"  %% "scalatest"  % "1.9.1" % "test",
+        "com.github.scala-incubator.io" %% "scala-io-core" % "0.4.2",
+        "com.github.scala-incubator.io" %% "scala-io-file" % "0.4.2"
       ),
 
       resolvers ++= Seq(
