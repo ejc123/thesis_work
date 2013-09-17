@@ -8,6 +8,7 @@ object MyBuild extends Build {
   // "com.azavea.geotrellis" %% "geotrellis-server" % "0.9.0-SNAPSHOT" % "compile",
   // "org.eclipse.jetty" % "jetty-webapp" % "8.1.0.RC4",
   // "com.sun.jersey" % "jersey-bundle" % "1.11",
+  // mainClass in run := Some("net.christeson.geotrellis.template.RunMe"),
   lazy val sharedSettings = Defaults.defaultSettings ++ Seq(
       //organization := "org.sample.demo",
 
@@ -31,6 +32,9 @@ object MyBuild extends Build {
         "com.azavea.geotrellis" %% "geotrellis-tasks" % "0.9.0-SNAPSHOT" % "compile",
         "com.azavea.geotrellis" %% "geotrellis" % "0.9.0-SNAPSHOT" % "compile",
         "junit" % "junit" % "4.5" % "test",
+        "com.azavea.geotrellis" %% "geotrellis-server" % "0.9.0-SNAPSHOT" % "compile",
+        "org.eclipse.jetty" % "jetty-webapp" % "8.1.0.RC4",
+        "com.sun.jersey" % "jersey-bundle" % "1.11",
         "org.scalatest"  %% "scalatest"  % "1.9.1" % "test",
         "com.github.scala-incubator.io" %% "scala-io-core" % "0.4.2",
         "com.github.scala-incubator.io" %% "scala-io-file" % "0.4.2"

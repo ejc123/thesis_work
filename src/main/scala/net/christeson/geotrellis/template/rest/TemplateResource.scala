@@ -1,8 +1,8 @@
 package net.christeson.geotrellis.template
 
-// import javax.servlet.http.HttpServletRequest
-// import javax.ws.rs._
-// import javax.ws.rs.core.{Context, Response}
+import javax.servlet.http.HttpServletRequest
+import javax.ws.rs._
+import javax.ws.rs.core.{Context, Response}
 
 import geotrellis._
 import geotrellis.data.ColorRamps._
@@ -15,10 +15,15 @@ import geotrellis.process.Error
 import geotrellis.process.Complete
 
 import com.vividsolutions.jts.{ geom => jts}
-import geotrellis.feature.{Polygon, Point}
+import geotrellis.feature.{Geometry, Polygon, Point}
 import geotrellis.data.{ReadState, FileReader}
 import java.io.BufferedReader
 import geotrellis.feature.rasterize.Callback
+import scala.collection.mutable
+import geotrellis.raster.op.extent.{GetRasterExtentFromRaster, CombineExtents, CropRasterExtent}
+import org.codehaus.jackson.JsonNode
+import geotrellis.logic.RasterCombine
+import geotrellis.raster.op.local.Combination
 
 //import scala.math._
 import geotrellis.statistics.{ArrayHistogram, Histogram}
@@ -28,7 +33,6 @@ import geotrellis.statistics.{ArrayHistogram, Histogram}
  */
 object Demo {
   val server = Server("demo") //, "catalog.json")
-/*
   def infoPage(cols: Int, rows: Int, ms: Long, url: String, tree: String) = """
   <html>
   <head>
@@ -49,7 +53,6 @@ object Demo {
 
   </body>
   </html>""" format(cols, rows, cols * rows, ms, url, tree)
-*/
 }
 
 /*
@@ -62,6 +65,7 @@ case class hist(r: Op[Histogram]) extends Operation[Array[Int]] {
     }
   }
 }
+*/
 case class RasterColRows(r: Op[Raster]) extends Operation[(Int,Int)] {
   def _run(context: geotrellis.Context) = runAsync(r :: Nil)
 
@@ -75,9 +79,14 @@ case class RasterColRows(r: Op[Raster]) extends Operation[(Int,Int)] {
 object response {
   def apply(mime: String)(data: Any) = Response.ok(data).`type`(mime).build()
 }
-*/
 object RunMe {
   /*
+  case class GetFeatureExtent(f:Op[Geometry[_]]) extends Op1(f)({
+    (f) => {
+      val env = f.geom.getEnvelopeInternal
+      Result(Extent( env.getMinX(), env.getMinY(), env.getMaxX(), env.getMaxY() ))
+    }
+  })
   def featureStats(data,feat) = {
     val a = new ArrayHistogram()
     feature.rasterize.Rasterizer.foreachCellByFeature(feat, data: RasterExtent) (
@@ -89,7 +98,7 @@ object RunMe {
   }
   */
   def main(args: Array[String]): Unit = {
-    val path = "file:///home/ejc/geotrellis/data/2007_field_boundary.geojson"
+    val path = "file:///home/ejc/geotrellis/data/2007_boundary_test.geojson"
     import scalax.io.Resource
     import scala.util.Random
     // val f = scala.io.Source.fromFile(path)
@@ -99,67 +108,101 @@ object RunMe {
 
     val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
     println("Size: " + geoms.length)
-    val tenPercent = Random.shuffle(geoms.toList).take((geoms.length*.10).toInt)// for (g <- Random.shuffle(geoms.toList).take((geoms.length*.10).toInt).par) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
+    // val tenPercent = Random.shuffle(geoms.toList).take((geoms.length*.10).toInt)// for (g <- Random.shuffle(geoms.toList).take((geoms.length*.10).toInt).par) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
 //     println("Done")
-    val rasterOp: Op[Raster] = io.LoadRaster("ltm7_clean_2007_0625")
+    val rasterOp: Op[Raster] = io.LoadRaster("2007_0711_test")
+    /*
+    val rasterExtent: Op[RasterExtent] = GetRasterExtentFromRaster(rasterOp)
+    val newpoly = Demo.server.run(geoms)
+    val reproj = Transformer.transform(newpoly(0),Projections.LongLat,Projections.RRVUTM)
+    val polygon = Polygon(reproj.geom,0)
+    val feat = GetFeatureExtent(polygon)
+    val foo2 = Demo.server.run(rasterExtent)
+    val ext = RasterExtent(Demo.server.run(CombineExtents(foo2.extent,feat)),foo2.cols,foo2.rows)
 
-
-    var tile = Map[RasterExtent,statistics.Histogram]()
-    val poly = for (g <- tenPercent.take(1) ) yield Polygon(g.geom,0)
-
-    val histOp = geotrellis.raster.op.zonal.summary.Histogram(rasterOp,poly.head,tile)
-    Demo.server.getResult(histOp) match {
-      case Complete(foo,_) => {
-println("Hist: " + foo.getTotalCount())
-      }
-      case _ => "Error"
+*/
+    var tile: Map[RasterExtent,statistics.Histogram] = null
+    val poly = for {
+      g <- geoms
+    }  yield {
+        val reproj = Transformer.transform(g,Projections.LongLat,Projections.RRVUTM)
+        val polygon = Polygon(reproj.geom,0)
+        geotrellis.raster.op.zonal.summary.Histogram(rasterOp,polygon,tile)
     }
+    poly.map ( a => {
+    Demo.server.getResult(a) match {
+      case Complete(foo,_) => {
+        println("Hist: " + foo.generateStatistics().toString)
+      }
+      case _ => println("Error")
+    }
+    }
+    )
 
     // for (g <- tenPercent) yield  feature.rasterize.Rasterizer.foreachCellByFeature(g,rasterOp)
 
-    sys.exit()
+     sys.exit()
   }
 }
 /*
+
 @Path("/draw")
 class Draw {
-  @GET
-  @Path("/{map}")
-  def get(@DefaultValue("0625") @PathParam("map") map: String,
-          @Context req: HttpServletRequest) = {
-    // val palette = "2791c3,5da1ca,83B2D1,A8C5D8,CCDBE0,E9D3C1,DCAD92,D08B6C,66E4B,BD4E2E"
-    // val numColors = "10"
-    val format = map match {
-      case "info" => "0625"
-      case _ => map
-    }
-    val rasterOp: Op[Raster] = io.LoadRaster("ltm7_clean_2007_" + format)
-    println("ltm7_clean_2007_" + format)
+@GET
+@Path("/{map}")
+def get(@DefaultValue("0625") @PathParam("map") map: String,
+      @Context req: HttpServletRequest) = {
+// val palette = "2791c3,5da1ca,83B2D1,A8C5D8,CCDBE0,E9D3C1,DCAD92,D08B6C,66E4B,BD4E2E"
+// val numColors = "10"
+val format = map match {
+  case "info" => "0625"
+  case _ => map
+}
+// val rasterOp: Op[Raster] = io.LoadRaster("ltm7_clean_2007_" + format)
+val rasterOp: Op[Raster] = io.LoadRaster("2007_0711_test")
+println("ltm7_clean_2007_" + format)
 
-    val path = "/home/ejc/geotrellis/data/2007_field_boundary.geojson"
-      val f = scala.io.Source.fromFile(path)
-      val geoJson = f.mkString
-      f.close
+val path = "/home/ejc/geotrellis/data/2007_boundary_test.geojson"
+  val f = scala.io.Source.fromFile(path)
+  val geoJson = f.mkString
+  f.close
 
 
-    val vectorOp = io.LoadGeoJson(geoJson)
+val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
 
-    val histogramOp = stat.GetHistogram(rasterOp)
-    val breaksOp = stat.GetColorBreaks(histogramOp, Literal(ClassificationBoldLandUse.toArray))
-    val pngOp = io.RenderPng(rasterOp, breaksOp, histogramOp, Literal(2))
-    // val pngOp = io.SimpleRenderPng(rasterOp,BlueToRed)
-*/
-    /*
-    val img = Demo.server.run(pngOp)
-    response("image/png")(img)
-    Demo.server.getResult(hist(histogramOp)) match {
-      case Complete(foo,_) => {
-        for {
-          f <- foo
-        } yield println("Hist: " + f)
-      }
-      case _ => println("An Error Occurred")
-    }
+
+case class GetFeatureExtent(f:Op[Geometry[_]]) extends Op1(f)({
+  (f) => {
+    val env = f.geom.getEnvelopeInternal
+    Result(Extent( env.getMinX(), env.getMinY(), env.getMaxX(), env.getMaxY() ))
+  }
+})
+
+val rasterExtent: Op[RasterExtent] = GetRasterExtentFromRaster(rasterOp)
+val poly = Demo.server.run(geoms)
+val reproj = Transformer.transform(poly(0),Projections.LongLat,Projections.RRVUTM)
+val polygon = Polygon(reproj.geom,0)
+val feat = GetFeatureExtent(polygon)
+val foo2 = Demo.server.run(rasterExtent)
+val ext = RasterExtent(Demo.server.run(CombineExtents(foo2.extent,feat)),foo2.cols,foo2.rows)
+val newRaster = feature.rasterize.Rasterizer.rasterizeWithValue(polygon,ext)((a: Int) => 0x11)
+
+val combo = Combination(rasterOp,newRaster)
+val histogramOp = stat.GetHistogram(combo)
+val breaksOp = stat.GetColorBreaks(histogramOp, Literal(ClassificationBoldLandUse.toArray))
+val pngOp = io.RenderPng(combo, breaksOp, histogramOp, Literal(2))
+// val pngOp = io.SimpleRenderPng(rasterOp,BlueToRed)
+
+val img = Demo.server.run(pngOp)
+response("image/png")(img)
+Demo.server.getResult(hist(histogramOp)) match {
+  case Complete(foo,_) => {
+    for {
+      f <- foo
+    } yield println("Hist: " + f)
+  }
+  case _ => println("An Error Occurred")
+}
 */
 /*
     val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
@@ -175,21 +218,33 @@ class Draw {
           Point(g.geom.asInstanceOf[jts.Point],g.data.get.get("data").getTextValue.toInt)
         }).toSeq
 
-     */
     // Response.ok("Loaded Json File").build()
-    /*
-    Demo.server.getResult(vectorOp) match {
-
-      case Complete(vec,h) => {
-        println(vec)
+    Demo.server.getResult(pngOp) match {
+      case Complete(img,h) => {
+        map match {
+          case "info" => {
+        println(img.length)
         val ms = h.elapsedTime
-        val html = Demo.infoPage(0, 0, ms, "", h.toDetailed())
+            val url = "/foo/draw/" + format
+            println(url)
+        val (cols,rows): (Int,Int) = Demo.server.getResult(RasterColRows(rasterOp)) match {
+          case Complete(minmax,timing) => {
+            minmax
+          }
+          case _ => println("An Error Occurred"); (0,0)
+
+        }
+        val html = Demo.infoPage(cols, rows, ms, url, h.toDetailed())
         response("text/html")(html)
+      }
+          case _ => Response.ok(img).`type`("image/png").build()
+        }
+
       }
       case Error(msg, trace) => Response.ok("failed: %s\ntrace:\n%s".format(msg, trace)).build()
     }
-    */
-  /*
+     */
+    /*
     Demo.server.getResult(pngOp) match {
       case Complete(img, h) => {
         map match {
@@ -214,7 +269,8 @@ class Draw {
       case Error(msg, trace) => Response.ok("failed: %s\ntrace:\n%s".format(msg, trace)).build()
     }
     */
-/*
+
+    /*
     Demo.server.getResult(rasterOp) match {
       case Complete(foo,h) => {
         val ms = h.elapsedTime
