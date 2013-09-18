@@ -98,7 +98,7 @@ object RunMe {
   }
   */
   def main(args: Array[String]): Unit = {
-    val path = "file:///home/ejc/geotrellis/data/2007_boundary_test.geojson"
+    val path = "file:///home/ejc/geotrellis/data/2007_field_boundary.geojson"
     import scalax.io.Resource
     import scala.util.Random
     // val f = scala.io.Source.fromFile(path)
@@ -108,9 +108,9 @@ object RunMe {
 
     val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
     println("Size: " + geoms.length)
-    // val tenPercent = Random.shuffle(geoms.toList).take((geoms.length*.10).toInt)// for (g <- Random.shuffle(geoms.toList).take((geoms.length*.10).toInt).par) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
+    val tenPercent = Random.shuffle(geoms.toList).take((geoms.length*.10).toInt)// for (g <- Random.shuffle(geoms.toList).take((geoms.length*.10).toInt).par) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
 //     println("Done")
-    val rasterOp: Op[Raster] = io.LoadRaster("2007_0711_test")
+    val rasterOp: Op[Raster] = io.LoadRaster("ltm7_clean_2007_0406")
     /*
     val rasterExtent: Op[RasterExtent] = GetRasterExtentFromRaster(rasterOp)
     val newpoly = Demo.server.run(geoms)
@@ -119,25 +119,37 @@ object RunMe {
     val feat = GetFeatureExtent(polygon)
     val foo2 = Demo.server.run(rasterExtent)
     val ext = RasterExtent(Demo.server.run(CombineExtents(foo2.extent,feat)),foo2.cols,foo2.rows)
-
 */
-    var tile: Map[RasterExtent,statistics.Histogram] = null
+    val (valid,invalid) = geoms.par.partition(_.geom.isValid)
+
+    println("Valid: " + valid.length)
+    for {
+      t <- valid.take(2)
+    } yield println("ID: " + t.data.get.get("IND").getDoubleValue + " Type: " + t.geom.getGeometryType)
+    println("Invalid: " + invalid.length)
+    for {
+      t <- invalid.take(2)
+    } yield println("ID: " + t.data.get.get("IND").getDoubleValue + " Type: " + t.geom.getGeometryType)
+
+    var tile: Map[RasterExtent,Int] = null
     val poly = for {
-      g <- geoms
+      g <- valid.filter(_.geom.getGeometryType == "Polygon")
     }  yield {
         val reproj = Transformer.transform(g,Projections.LongLat,Projections.RRVUTM)
         val polygon = Polygon(reproj.geom,0)
-        geotrellis.raster.op.zonal.summary.Histogram(rasterOp,polygon,tile)
+      (reproj.data.get.get("IND").getDoubleValue, geotrellis.raster.op.zonal.summary.Max(rasterOp,polygon,tile))
     }
-    poly.map ( a => {
-    Demo.server.getResult(a) match {
+    val results = poly.map ( a => {
+    Demo.server.getResult(a._2) match {
       case Complete(foo,_) => {
-        println("Hist: " + foo.generateStatistics().toString)
+        "ID: " + a._1 + " Max: " + foo.toString
       }
-      case _ => println("Error")
+      case _ => "Error"
     }
     }
     )
+
+    println("Results size: " + results.length)
 
     // for (g <- tenPercent) yield  feature.rasterize.Rasterizer.foreachCellByFeature(g,rasterOp)
 

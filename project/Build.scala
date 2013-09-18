@@ -8,7 +8,7 @@ object MyBuild extends Build {
   // "com.azavea.geotrellis" %% "geotrellis-server" % "0.9.0-SNAPSHOT" % "compile",
   // "org.eclipse.jetty" % "jetty-webapp" % "8.1.0.RC4",
   // "com.sun.jersey" % "jersey-bundle" % "1.11",
-  // mainClass in run := Some("net.christeson.geotrellis.template.RunMe"),
+  // mainClass in (Compile,run) := Some("geotrellis.rest.WebRunner"),
   lazy val sharedSettings = Defaults.defaultSettings ++ Seq(
       //organization := "org.sample.demo",
 
@@ -23,7 +23,7 @@ object MyBuild extends Build {
 
       parallelExecution := false,
 
-    mainClass in (Compile,run) := Some("geotrellis.rest.WebRunner"),
+    mainClass in (Compile,run) := Some("net.christeson.geotrellis.template.RunMe"),
 
       javaOptions in run += "-Xmx8G",
 
