@@ -140,17 +140,17 @@ object RunMe {
       (reproj.data.get.get("IND").getDoubleValue, geotrellis.raster.op.zonal.summary.Max(rasterOp,polygon,tile))
     }
     val results = poly.map ( a => {
-    Demo.server.getResult(a._2) match {
-      case Complete(foo,_) => {
-        "ID: " + a._1 + " Max: " + foo.toString
-      }
-      case _ => "Error"
-    }
+	    Demo.server.getResult(a._2) match {
+	      case Complete(foo,_) => {
+		"ID: " + a._1 + " Max: " + foo.toString
+	      }
+		      case _ => "Error"
+	    }
     }
     )
 
-    println("Results size: " + results.length)
 
+    // results.map(println(_))
     // for (g <- tenPercent) yield  feature.rasterize.Rasterizer.foreachCellByFeature(g,rasterOp)
 
      sys.exit()
