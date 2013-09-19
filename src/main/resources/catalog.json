@@ -2,10 +2,19 @@
  "catalog": "Test GeoData Catalog",
  "stores": [
   {
-   "store": "data:fs",
+   "store": "tiled",
    "params": {
      "type": "fs",
-     "path": "/home/ejc/geotrellis/data"
+     "path": "/home/ejc/geotrellis/data",
+     "cacheAll": "no"
+   }
+  },
+  {
+   "store": "non-tiled",
+   "params": {
+     "type": "fs",
+     "path": "/home/ejc/geotrellis/data",
+     "cacheAll": "no"
    }
   }
  ]
