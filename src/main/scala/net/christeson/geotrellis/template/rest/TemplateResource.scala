@@ -25,7 +25,7 @@ import geotrellis.raster.op.extent.{GetRasterExtentFromRaster, CombineExtents, C
 import org.codehaus.jackson.JsonNode
 import geotrellis.logic.RasterCombine
 import geotrellis.raster.op.local.Combination
-import geotrellis.raster.op.zonal.summary.Max
+import geotrellis.raster.op.zonal.summary.Mean
 
 //import scala.math._
 
@@ -39,7 +39,7 @@ case class GetFeatureExtent(f:Op[Geometry[_]]) extends Op1(f)({
 })
 
 object Demo {
-  val server = Server("demo","catalog.json")
+  val server = Server("demo")//,"catalog.json")
   /*
   def infoPage(cols: Int, rows: Int, ms: Long, url: String, tree: String) = """
   <html>
@@ -124,11 +124,11 @@ object RunMe {
         val id = reproj.data.get.get("IND").getDoubleValue
         val featureExtent = GetFeatureExtent(reproj)
         val ext = Demo.server.run(CropRasterExtent(rasterExtent,featureExtent))
-        val tile = Max.createTileResults(tileSetRD,ext)
-        val maxOp = Max(tileSet, polygon, tile)
+        val tile = Mean.createTileResults(tileSetRD,ext)
+        val maxOp = Mean(tileSet, polygon, tile)
         Demo.server.getResult(maxOp) match {
           case Complete(foo, _) => {
-            println("ID: " + id + " Max: " + foo.toString)
+            println("ID: " + id + " Mean: " + foo.toString)
           }
           case _ => "Error"
         }
