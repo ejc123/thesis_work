@@ -102,13 +102,14 @@ object RunMe {
     println("Loading geometry file")
     val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
     println("Size: " + geoms.length)
-     //val tenPercent = Random.shuffle(geoms.toList).take((geoms.length * .10).toInt) // for (g <- Random.shuffle(geoms.toList).take((geoms.length*.10).toInt).par) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
+    // for (g <- Random.shuffle(geoms.toList).take((geoms.length*.10).toInt).par) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
 
     println("partitioning geometry file")
     val (valid, invalid) = geoms.partition(_.geom.isValid)
     println("Valid: " + valid.length)
     println("Invalid: " + invalid.length)
 
+    val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
     println("Loading tileset")
     val tileSet = Demo.server.run(io.LoadTileSet("/home/ejc/geotrellis/data/tiled/ltm7_clean_2007_0406.json"))
     val tileSetRD = tileSet.data.asInstanceOf[TileArrayRasterData]
@@ -117,7 +118,7 @@ object RunMe {
 
     try {
       for {
-        g <- valid.filter(_.geom.getGeometryType == "Polygon")
+        g <- tenPercent.filter(_.geom.getGeometryType == "Polygon")
       } yield {
         val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
         val polygon = Polygon(reproj.geom, 0)
