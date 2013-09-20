@@ -17,19 +17,13 @@ import geotrellis.process.Complete
 import com.vividsolutions.jts.{geom => jts}
 import geotrellis.feature.{Geometry, Polygon, Point}
 import geotrellis.data.{ReadState, FileReader}
-import java.io.BufferedReader
-import geotrellis.feature.rasterize.Callback
-import scala.collection.mutable
 import geotrellis.raster._
-import geotrellis.raster.op.extent.{GetRasterExtentFromRaster, CombineExtents, CropRasterExtent}
-import org.codehaus.jackson.JsonNode
-import geotrellis.logic.RasterCombine
-import geotrellis.raster.op.local.Combination
-import geotrellis.raster.op.zonal.summary.Mean
+import geotrellis.raster.op.extent.CropRasterExtent
+import geotrellis.raster.op.zonal.summary.Median
 
 //import scala.math._
 
-import geotrellis.statistics.{ArrayHistogram, Histogram}
+// import geotrellis.statistics.{ArrayHistogram, Histogram}
 
 case class GetFeatureExtent(f:Op[Geometry[_]]) extends Op1(f)({
   (f) => {
@@ -99,46 +93,50 @@ object RunMe {
     val resource = Resource.fromURL(path).chars
     val geoJson = resource.mkString
 
-    println("Loading geometry file")
+    // println("Loading geometry file")
     val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
-    println("Size: " + geoms.length)
+  //   println("Size: " + geoms.length)
     // for (g <- Random.shuffle(geoms.toList).take((geoms.length*.10).toInt).par) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
 
-    println("partitioning geometry file")
+    // println("partitioning geometry file")
     val (valid, invalid) = geoms.partition(_.geom.isValid)
-    println("Valid: " + valid.length)
-    println("Invalid: " + invalid.length)
+    // println("Valid: " + valid.length)
+    // println("Invalid: " + invalid.length)
 
-    val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
-    println("Loading tileset")
-    val tileSet = Demo.server.run(io.LoadTileSet("/home/ejc/geotrellis/data/tiled/ltm7_clean_2007_0406.json"))
-    val tileSetRD = tileSet.data.asInstanceOf[TileArrayRasterData]
-    val rasterExtent = io.LoadRasterExtent("ltm7_clean_2007_0406")
-    println("tileset loaded")
+    // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
+    // val tenPercent = valid.toList.take((valid.length * .10).toInt).par
+    // println("Loading tileset")
+    val tileSet = Demo.server.run(io.LoadTileSet("/home/ejc/geotrellis/data/tiled/ltm5_2007_0414_clean.json"))
+//    val tileSetRD = tileSet.data.asInstanceOf[TileArrayRasterData]
+    val rasterExtent = io.LoadRasterExtent("ltm5_2007_0414_clean")
+    // println("tileset loaded")
 
     try {
-      for {
-        g <- tenPercent.filter(_.geom.getGeometryType == "Polygon")
+      val results = for {
+        g <- valid.filter(_.geom.getGeometryType == "Polygon")
       } yield {
         val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
         val polygon = Polygon(reproj.geom, 0)
         val id = reproj.data.get.get("IND").getDoubleValue
         val featureExtent = GetFeatureExtent(reproj)
         val ext = Demo.server.run(CropRasterExtent(rasterExtent,featureExtent))
-        val tile = Mean.createTileResults(tileSetRD,ext)
-        val maxOp = Mean(tileSet, polygon, tile)
+        //val tile = Median.createTileResults(tileSetRD,ext)
+        val tile = null
+        val maxOp = Median(tileSet, polygon, tile)
         Demo.server.getResult(maxOp) match {
-          case Complete(foo, _) => {
-            println("ID: " + id + " Mean: " + foo.toString)
+          case Complete(median, _) => {
+            (id,median)
           }
-          case _ => "Error"
+          case _ => ("Error",geotrellis.NODATA)
         }
       }
+      println(s"Results length ${results.length}")
+      val filtered = results.filter(a => a._2 != geotrellis.NODATA)
+      println(s"Filtered length ${filtered.length}")
+      filtered.map(println(_))
       val stopNanos = System.nanoTime()
       val diff = stopNanos - startNanos
       println(s"That took: ${diff / 1000000} ms")
-
-      // for (g <- tenPercent) yield  feature.rasterize.Rasterizer.foreachCellByFeature(g,rasterOp)
 
     }
     finally {
