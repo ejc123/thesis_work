@@ -25,12 +25,7 @@ import geotrellis.raster.op.zonal.summary.Median
 
 // import geotrellis.statistics.{ArrayHistogram, Histogram}
 
-case class GetFeatureExtent(f:Op[Geometry[_]]) extends Op1(f)({
-  (f) => {
-    val env = f.geom.getEnvelopeInternal
-    Result(Extent( env.getMinX(), env.getMinY(), env.getMaxX(), env.getMaxY() ))
-  }
-})
+
 
 object Demo {
   val server = Server("demo")//,"catalog.json")
@@ -84,43 +79,41 @@ object response {
 }
 object RunMe {
   def main(args: Array[String]): Unit = {
-    val path = "file:///home/ejc/geotrellis/data/2007_field_boundary.geojson"
+    val featurePath = "file:///home/ejc/geotrellis/data/2007_field_boundary.geojson"
     import scalax.io.Resource
     import scala.util.Random
-    val startNanos = System.nanoTime()
+    val dates = List("0414","0430","0516","0601","0617","0703","0719","0804","0820","0905","0921").par
+    val tilePath = "/home/ejc/geotrellis/data/tiled"
 
     implicit val codec = scalax.io.Codec.UTF8
-    val resource = Resource.fromURL(path).chars
-    val geoJson = resource.mkString
-
     // println("Loading geometry file")
+    val resource = Resource.fromURL(featurePath).chars
+    val geoJson = resource.mkString
     val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
-  //   println("Size: " + geoms.length)
-    // for (g <- Random.shuffle(geoms.toList).take((geoms.length*.10).toInt).par) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
-
-    // println("partitioning geometry file")
     val (valid, invalid) = geoms.partition(_.geom.isValid)
-    // println("Valid: " + valid.length)
-    // println("Invalid: " + invalid.length)
 
     // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
     // val tenPercent = valid.toList.take((valid.length * .10).toInt).par
-    // println("Loading tileset")
-    val tileSet = Demo.server.run(io.LoadTileSet("/home/ejc/geotrellis/data/tiled/ltm5_2007_0414_clean.json"))
-//    val tileSetRD = tileSet.data.asInstanceOf[TileArrayRasterData]
-    val rasterExtent = io.LoadRasterExtent("ltm5_2007_0414_clean")
     // println("tileset loaded")
 
     try {
       val results = for {
-        g <- valid.filter(_.geom.getGeometryType == "Polygon")
+        g <- valid.filter(_.geom.getGeometryType == "Polygon").take(10)
+        date <- dates
       } yield {
+        val startNanos = System.nanoTime()
         val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
         val polygon = Polygon(reproj.geom, 0)
+        val stopNanos = System.nanoTime()
+        val diff = stopNanos - startNanos
+        println(s"That took: ${diff / 1000000} ms")
         val id = reproj.data.get.get("IND").getDoubleValue
         val featureExtent = GetFeatureExtent(reproj)
+        val tileFile = s"ltm5_2007_${date}_clean"
+        val tileSet = Demo.server.run(io.LoadTileSet(s"${tilePath}/${tileFile}.json"))
+        println(s"Processing $tileFile")
+        val rasterExtent = io.LoadRasterExtent(tileFile)
         val ext = Demo.server.run(CropRasterExtent(rasterExtent,featureExtent))
-        //val tile = Median.createTileResults(tileSetRD,ext)
         val tile = null
         val maxOp = Median(tileSet, polygon, tile)
         Demo.server.getResult(maxOp) match {
@@ -134,9 +127,6 @@ object RunMe {
       val filtered = results.filter(a => a._2 != geotrellis.NODATA)
       println(s"Filtered length ${filtered.length}")
       filtered.map(println(_))
-      val stopNanos = System.nanoTime()
-      val diff = stopNanos - startNanos
-      println(s"That took: ${diff / 1000000} ms")
 
     }
     finally {
