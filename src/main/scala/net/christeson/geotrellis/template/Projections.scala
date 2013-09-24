@@ -1,5 +1,7 @@
 package net.christeson.geotrellis.template
 
+import org.geotools.referencing.CRS
+
 object Projections {
   val RRVUTM = CRS.parseWKT(
     """
