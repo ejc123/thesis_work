@@ -107,8 +107,10 @@ object RunMe {
     // val tenPercent = valid.toList.take((valid.length * .10).toInt).par
     // println("Loading tileset")
     val tileSet = Demo.server.run(io.LoadTileSet("/home/ejc/geotrellis/data/tiled/ltm5_2007_0414_clean.json"))
+    val tileSet2 = Demo.server.run(io.LoadTileSet("/home/ejc/geotrellis/data/tiled/ltm5_2007_0516_clean.json"))
 //    val tileSetRD = tileSet.data.asInstanceOf[TileArrayRasterData]
-    val rasterExtent = io.LoadRasterExtent("ltm5_2007_0414_clean")
+//val rasterExtent = io.LoadRasterExtent("ltm5_2007_0414_clean")
+//val rasterExtent2 = io.LoadRasterExtent("ltm5_2007_0516_clean")
     // println("tileset loaded")
 
     try {
@@ -119,9 +121,10 @@ object RunMe {
         val polygon = Polygon(reproj.geom, 0)
         val id = reproj.data.get.get("IND").getDoubleValue
         val featureExtent = GetFeatureExtent(reproj)
-        val ext = Demo.server.run(CropRasterExtent(rasterExtent,featureExtent))
+        //val ext = Demo.server.run(CropRasterExtent(rasterExtent,featureExtent))
         //val tile = Median.createTileResults(tileSetRD,ext)
         val tile = null
+        val maxOp2 = Median(tileSet2, polygon, tile)
         val maxOp = Median(tileSet, polygon, tile)
         Demo.server.getResult(maxOp) match {
           case Complete(median, _) => {
