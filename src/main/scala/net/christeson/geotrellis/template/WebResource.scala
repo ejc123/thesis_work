@@ -1,6 +1,7 @@
 package net.christeson.geotrellis.template
 
 import javax.servlet.http.HttpServletRequest
+
 import javax.ws.rs._
 import javax.ws.rs.core.{Context, Response}
 
@@ -18,23 +19,21 @@ import com.vividsolutions.jts.{geom => jts}
 import geotrellis.feature.{Geometry, Polygon, Point}
 import geotrellis.data.{ReadState, FileReader}
 import geotrellis.raster._
-import geotrellis.raster.op.extent.CropRasterExtent
-import geotrellis.raster.op.zonal.summary.Median
+import geotrellis.raster.op.extent.{CombineExtents, GetRasterExtentFromRaster, CropRasterExtent}
+import geotrellis.raster.op.zonal.summary.{ Mean, Median }
+
+import RasterLoader._
+import geotrellis.raster.op.local.Combination
+import net.christeson.geotrellis.template.WebDemo.{RasterColRows, response}
 
 //import scala.math._
 
-// import geotrellis.statistics.{ArrayHistogram, Histogram}
+import geotrellis.statistics.{ArrayHistogram, Histogram}
 
-case class GetFeatureExtent(f:Op[Geometry[_]]) extends Op1(f)({
-  (f) => {
-    val env = f.geom.getEnvelopeInternal
-    Result(Extent( env.getMinX(), env.getMinY(), env.getMaxX(), env.getMaxY() ))
-  }
-})
 
-object Demo {
+
+object WebDemo {
   val server = Server("demo")//,"catalog.json")
-  /*
   def infoPage(cols: Int, rows: Int, ms: Long, url: String, tree: String) = """
   <html>
   <head>
@@ -55,7 +54,6 @@ object Demo {
 
   </body>
   </html>""" format(cols, rows, cols * rows, ms, url, tree)
-}
 
 case class hist(r: Op[Histogram]) extends Operation[Array[Int]] {
   def _run(context: geotrellis.Context) = runAsync(r :: Nil)
@@ -80,66 +78,56 @@ case class RasterColRows(r: Op[Raster]) extends Operation[(Int,Int)] {
 object response {
   def apply(mime: String)(data: Any) = Response.ok(data).`type`(mime).build()
 }
-*/
 }
+/*
 object RunMe {
   def main(args: Array[String]): Unit = {
-    val path = "file:///home/ejc/geotrellis/data/2007_field_boundary.geojson"
+    val featurePath = "file:///home/ejc/geotrellis/data/2007_field_boundary.geojson"
     import scalax.io.Resource
     import scala.util.Random
-    val startNanos = System.nanoTime()
 
     implicit val codec = scalax.io.Codec.UTF8
-    val resource = Resource.fromURL(path).chars
-    val geoJson = resource.mkString
-
     // println("Loading geometry file")
+    val startNanos = System.nanoTime()
+    val resource = Resource.fromURL(featurePath).chars
+    val geoJson = resource.mkString
     val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
-  //   println("Size: " + geoms.length)
-    // for (g <- Random.shuffle(geoms.toList).take((geoms.length*.10).toInt).par) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
-
-    // println("partitioning geometry file")
     val (valid, invalid) = geoms.partition(_.geom.isValid)
-    // println("Valid: " + valid.length)
-    // println("Invalid: " + invalid.length)
+    val stopNanos = System.nanoTime()
+    val diff = stopNanos - startNanos
+    println(s"Load Geometry file took: ${diff / 1000000} ms")
 
     // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
     // val tenPercent = valid.toList.take((valid.length * .10).toInt).par
-    // println("Loading tileset")
-    val tileSet = Demo.server.run(io.LoadTileSet("/home/ejc/geotrellis/data/tiled/ltm5_2007_0414_clean.json"))
-    val tileSet2 = Demo.server.run(io.LoadTileSet("/home/ejc/geotrellis/data/tiled/ltm5_2007_0516_clean.json"))
-//    val tileSetRD = tileSet.data.asInstanceOf[TileArrayRasterData]
-//val rasterExtent = io.LoadRasterExtent("ltm5_2007_0414_clean")
-//val rasterExtent2 = io.LoadRasterExtent("ltm5_2007_0516_clean")
     // println("tileset loaded")
 
     try {
       val results = for {
-        g <- valid.filter(_.geom.getGeometryType == "Polygon")
+        g <- valid.filter(_.geom.getGeometryType == "Polygon").take(20)
+        date <- dates.par
       } yield {
         val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
         val polygon = Polygon(reproj.geom, 0)
-        val id = reproj.data.get.get("IND").getDoubleValue
+        val id = reproj.data.get.get("IND").getDoubleValue.toInt
         val featureExtent = GetFeatureExtent(reproj)
-        //val ext = Demo.server.run(CropRasterExtent(rasterExtent,featureExtent))
-        //val tile = Median.createTileResults(tileSetRD,ext)
+        val tileFile = s"ltm5_2007_${date}_clean"
+        val tileSet = RasterLoader.load(s"$tilePath/$tileFile.json")
+        val ext = Demo.server.run(CropRasterExtent(tileSet.rasterExtent,featureExtent))
         val tile = null
-        val maxOp2 = Median(tileSet2, polygon, tile)
-        val maxOp = Median(tileSet, polygon, tile)
+        val maxOp = Mean(tileSet, polygon, tile)
         Demo.server.getResult(maxOp) match {
           case Complete(median, _) => {
             (id,median)
           }
-          case _ => ("Error",geotrellis.NODATA)
+          // case _ => ("Error",geotrellis.NODATA)
         }
       }
-      println(s"Results length ${results.length}")
-      val filtered = results.filter(a => a._2 != geotrellis.NODATA)
-      println(s"Filtered length ${filtered.length}")
-      filtered.map(println(_))
-      val stopNanos = System.nanoTime()
-      val diff = stopNanos - startNanos
-      println(s"That took: ${diff / 1000000} ms")
+      val filtered = results.groupBy(a => a._1 ).map(a => a._1 -> a._2.map(_._2).filter(_ != geotrellis.NODATA
+      ))
+      // println(s"Results length ${results.length}")
+     //  val filtered = results.filter(a => a._2 != geotrellis.NODATA)
+      println(s"Filtered length ${filtered.size}")
+      filtered.map(m => {println(s"Key: ${m._1}"); println("   Values:"); m._2.map(b => println(s"    $b")) })
 
     }
     finally {
@@ -147,8 +135,7 @@ object RunMe {
     }
   }
 }
-
-/*
+*/
 
 @Path("/draw")
 class Draw {
@@ -156,8 +143,6 @@ class Draw {
 @Path("/{map}")
 def get(@DefaultValue("0625") @PathParam("map") map: String,
       @Context req: HttpServletRequest) = {
-// val palette = "2791c3,5da1ca,83B2D1,A8C5D8,CCDBE0,E9D3C1,DCAD92,D08B6C,66E4B,BD4E2E"
-// val numColors = "10"
 val format = map match {
   case "info" => "0625"
   case _ => map
@@ -171,17 +156,15 @@ val path = "/home/ejc/geotrellis/data/2007_boundary_test.geojson"
   val geoJson = f.mkString
   f.close
 
-
-val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
-
+val geoms = WebDemo.server.run(io.LoadGeoJson(geoJson))
 
 val rasterExtent: Op[RasterExtent] = GetRasterExtentFromRaster(rasterOp)
-val poly = Demo.server.run(geoms)
+val poly = WebDemo.server.run(geoms)
 val reproj = Transformer.transform(poly(0),Projections.LongLat,Projections.RRVUTM)
 val polygon = Polygon(reproj.geom,0)
 val feat = GetFeatureExtent(polygon)
-val foo2 = Demo.server.run(rasterExtent)
-val ext = RasterExtent(Demo.server.run(CombineExtents(foo2.extent,feat)),foo2.cols,foo2.rows)
+val foo2 = WebDemo.server.run(rasterExtent)
+val ext = RasterExtent(WebDemo.server.run(CombineExtents(foo2.extent,feat)),foo2.cols,foo2.rows)
 val newRaster = feature.rasterize.Rasterizer.rasterizeWithValue(polygon,ext)((a: Int) => 0x11)
 
 val combo = Combination(rasterOp,newRaster)
@@ -190,9 +173,10 @@ val breaksOp = stat.GetColorBreaks(histogramOp, Literal(ClassificationBoldLandUs
 val pngOp = io.RenderPng(combo, breaksOp, histogramOp, Literal(2))
 // val pngOp = io.SimpleRenderPng(rasterOp,BlueToRed)
 
-val img = Demo.server.run(pngOp)
+val img = WebDemo.server.run(pngOp)
 response("image/png")(img)
-Demo.server.getResult(hist(histogramOp)) match {
+  /*
+WebDemo.server.getResult(WebDemo.hist(histogramOp)) match {
   case Complete(foo,_) => {
     for {
       f <- foo
@@ -200,87 +184,83 @@ Demo.server.getResult(hist(histogramOp)) match {
   }
   case _ => println("An Error Occurred")
 }
-*/
-/*
-    val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
+    val geoms = WebDemo.server.run(io.LoadGeoJson(geoJson))
     println("Size: " + geoms.length)
     for (g <- geoms.take(10)) yield  println("First: " + g.data.get.get("COUNTY").getTextValue)
        //for(g <- geoms) yield {
        //   println("Geometry Type: " + g.toString)
        //}
-       */
-/*
 val points =
     (for(g <- geoms) yield {
       Point(g.geom.asInstanceOf[jts.Point],g.data.get.get("data").getTextValue.toInt)
     }).toSeq
-
-// Response.ok("Loaded Json File").build()
-Demo.server.getResult(pngOp) match {
-  case Complete(img,h) => {
-    map match {
-      case "info" => {
-    println(img.length)
-    val ms = h.elapsedTime
-        val url = "/foo/draw/" + format
-        println(url)
-    val (cols,rows): (Int,Int) = Demo.server.getResult(RasterColRows(rasterOp)) match {
-      case Complete(minmax,timing) => {
-        minmax
-      }
-      case _ => println("An Error Occurred"); (0,0)
-
-    }
-    val html = Demo.infoPage(cols, rows, ms, url, h.toDetailed())
-    response("text/html")(html)
-  }
-      case _ => Response.ok(img).`type`("image/png").build()
-    }
-
-  }
-  case Error(msg, trace) => Response.ok("failed: %s\ntrace:\n%s".format(msg, trace)).build()
-}
- */
-/*
-Demo.server.getResult(pngOp) match {
-  case Complete(img, h) => {
-    map match {
-      case "info" => {
-        val ms = h.elapsedTime
-        val url = "/gt/draw/" + format
-        println(url)
-        val (cols,rows): (Int,Int) = Demo.server.getResult(RasterColRows(rasterOp)) match {
-          case Complete(minmax,timing) => {
-            minmax
-          }
-          case _ => println("An Error Occurred"); (0,0)
-
-        }
-        val html = Demo.infoPage(cols, rows, ms, url, h.toPretty())
-        response("text/html")(html)
-      }
-      case _ => Response.ok(img).`type`("image/png").build()
-
-    }
-  }
-  case Error(msg, trace) => Response.ok("failed: %s\ntrace:\n%s".format(msg, trace)).build()
-}
 */
 
+  // Response.ok("Loaded Json File").build()
+  WebDemo.server.getResult(pngOp) match {
+    case Complete(img,h) => {
+      map match {
+        case "info" => {
+      println(img.length)
+      val ms = h.elapsedTime
+          val url = "/foo/draw/" + format
+          println(url)
+      val (cols,rows): (Int,Int) = WebDemo.server.getResult(RasterColRows(rasterOp)) match {
+        case Complete(minmax,timing) => {
+          minmax
+        }
+        case _ => println("An Error Occurred"); (0,0)
+
+      }
+      val html = WebDemo.infoPage(cols, rows, ms, url, h.toDetailed())
+      response("text/html")(html)
+    }
+        case _ => Response.ok(img).`type`("image/png").build()
+      }
+
+    }
+    case Error(msg, trace) => Response.ok("failed: %s\ntrace:\n%s".format(msg, trace)).build()
+  }
+  /*
+  WebDemo.server.getResult(pngOp) match {
+    case Complete(img, h) => {
+      map match {
+        case "info" => {
+          val ms = h.elapsedTime
+          val url = "/gt/draw/" + format
+          println(url)
+          val (cols,rows): (Int,Int) = WebDemo.server.getResult(RasterColRows(rasterOp)) match {
+            case Complete(minmax,timing) => {
+              minmax
+            }
+            case _ => println("An Error Occurred"); (0,0)
+
+          }
+          val html = WebDemo.infoPage(cols, rows, ms, url, h.toPretty())
+          response("text/html")(html)
+        }
+        case _ => Response.ok(img).`type`("image/png").build()
+
+      }
+    }
+    case Error(msg, trace) => Response.ok("failed: %s\ntrace:\n%s".format(msg, trace)).build()
+  }
+  */
+
 /*
-Demo.server.getResult(rasterOp) match {
+WebDemo.server.getResult(rasterOp) match {
   case Complete(foo,h) => {
     val ms = h.elapsedTime
     val url = "/gt/"
-    val (cols,rows) = Demo.server.getResult(RasterColRows(rasterOp)) match {
+    val (cols,rows) = WebDemo.server.getResult(RasterColRows(rasterOp)) match {
       case Complete(colrows,timing) =>  colrows
       case _ => println("Error"); (0,0)
     }
-    val html = Demo.infoPage(cols,rows,ms,url,h.toPretty)
+    val html = WebDemo.infoPage(cols,rows,ms,url,h.toPretty)
     response("text/html")(html)
   }
   case Error(msg, trace) => Response.ok("failed: %s\ntrace:\n%s".format(msg, trace)).build()
 }
 */
-//  }
-//}
+ }
+}
