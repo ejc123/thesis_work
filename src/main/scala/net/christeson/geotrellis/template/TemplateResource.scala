@@ -20,9 +20,10 @@ import geotrellis.feature.{Geometry, Polygon, Point}
 import geotrellis.data.{ReadState, FileReader}
 import geotrellis.raster._
 import geotrellis.raster.op.extent.CropRasterExtent
-import geotrellis.raster.op.zonal.summary.{ Mean, Median }
+import geotrellis.raster.op.zonal.summary.{ Mean, Median, Histogram }
 
 import RasterLoader._
+import geotrellis.statistics.Statistics
 
 //import scala.math._
 
@@ -53,8 +54,8 @@ object RunMe {
 
     try {
       val results = for {
-        g <- valid.filter(_.geom.getGeometryType == "Polygon").take(20)
-        date <- dates.par
+        g <- valid.filter(_.geom.getGeometryType == "Polygon")
+        date <- dates
       } yield {
         val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
         val polygon = Polygon(reproj.geom, 0)
@@ -64,20 +65,21 @@ object RunMe {
         val tileSet = RasterLoader.load(s"$tilePath/$tileFile.json")
         val ext = Demo.server.run(CropRasterExtent(tileSet.rasterExtent,featureExtent))
         val tile = null
-        val maxOp = Mean(tileSet, polygon, tile)
+        val maxOp = Histogram(tileSet, polygon, tile)
         Demo.server.getResult(maxOp) match {
-          case Complete(median, _) => {
-            (id,median)
+          case Complete(median, stats) => {
+            (id,median.getMedian,stats.stopTime - stats.startTime)
           }
-          // case _ => ("Error",geotrellis.NODATA)
+          case _ => (-1,geotrellis.NODATA,0L)
         }
       }
-      val filtered = results.groupBy(a => a._1 ).map(a => a._1 -> a._2.map(_._2).filter(_ != geotrellis.NODATA
-      ))
-      // println(s"Results length ${results.length}")
-     //  val filtered = results.filter(a => a._2 != geotrellis.NODATA)
+      // val filtered = results.groupBy(a => a._1 ).map(a => a._1 -> a._2.map(_._2).filter(_ != geotrellis.NODATA ))
+      println(s"Results length ${results.length}")
+      val filtered = results.filter(a => (a._2 != geotrellis.NODATA))
       println(s"Filtered length ${filtered.size}")
-      filtered.map(m => {println(s"Key: ${m._1}"); println("   Values:"); m._2.map(b => println(s"    $b")) })
+      filtered.map(println(_))
+      println(s"Total time for Median: ${filtered.foldLeft(0L)((a,b) => a + b._3)} ms")
+      //  filtered.map(m => {println(s"Key: ${m._1}"); println("   Values:"); m._2.map(b => println(s"    $b")) })
 
     }
     finally {

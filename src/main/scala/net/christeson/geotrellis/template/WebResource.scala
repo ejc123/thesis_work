@@ -20,7 +20,7 @@ import geotrellis.feature.{Geometry, Polygon, Point}
 import geotrellis.data.{ReadState, FileReader}
 import geotrellis.raster._
 import geotrellis.raster.op.extent.{CombineExtents, GetRasterExtentFromRaster, CropRasterExtent}
-import geotrellis.raster.op.zonal.summary.{ Mean, Median }
+import geotrellis.raster.op.zonal.summary.Mean
 
 import RasterLoader._
 import geotrellis.raster.op.local.Combination
