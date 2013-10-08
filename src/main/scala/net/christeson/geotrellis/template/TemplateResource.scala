@@ -65,10 +65,10 @@ object RunMe {
         val tileSet = RasterLoader.load(s"$tilePath/$tileFile.json")
         val ext = Demo.server.run(CropRasterExtent(tileSet.rasterExtent,featureExtent))
         val tile = null
-        val maxOp = Histogram(tileSet, polygon, tile)
+        val maxOp = Median(tileSet, polygon, tile)
         Demo.server.getResult(maxOp) match {
           case Complete(median, stats) => {
-            (id,median.getMedian,stats.stopTime - stats.startTime)
+            (id,median,stats.stopTime - stats.startTime)
           }
           case _ => (-1,geotrellis.NODATA,0L)
         }
@@ -77,8 +77,8 @@ object RunMe {
       println(s"Results length ${results.length}")
       val filtered = results.filter(a => (a._2 != geotrellis.NODATA))
       println(s"Filtered length ${filtered.size}")
-      filtered.map(println(_))
-      println(s"Total time for Median: ${filtered.foldLeft(0L)((a,b) => a + b._3)} ms")
+      results.map(println(_))
+      println(s"Total time for Median: ${results.foldLeft(0L)((a,b) => a + b._3)} ms")
       //  filtered.map(m => {println(s"Key: ${m._1}"); println("   Values:"); m._2.map(b => println(s"    $b")) })
 
     }
