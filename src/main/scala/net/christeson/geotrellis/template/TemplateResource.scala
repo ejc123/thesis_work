@@ -63,7 +63,7 @@ object RunMe {
         val featureExtent = GetFeatureExtent(reproj)
         val tileFile = s"ltm5_2007_${date}_clean"
         val tileSet = RasterLoader.load(s"$tilePath/$tileFile.json")
-        val ext = Demo.server.run(CropRasterExtent(tileSet.rasterExtent,featureExtent))
+        // val ext = Demo.server.run(CropRasterExtent(tileSet.rasterExtent,featureExtent))
         val tile = null
         val maxOp = Median(tileSet, polygon, tile)
         Demo.server.getResult(maxOp) match {
