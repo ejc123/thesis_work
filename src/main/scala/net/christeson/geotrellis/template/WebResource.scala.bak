@@ -20,10 +20,9 @@ import geotrellis.feature.{Geometry, Polygon, Point}
 import geotrellis.data.{ReadState, FileReader}
 import geotrellis.raster._
 import geotrellis.raster.op.extent.{CombineExtents, GetRasterExtentFromRaster, CropRasterExtent}
-import geotrellis.raster.op.zonal.summary.Mean
 
-import RasterLoader._
-import geotrellis.raster.op.local.Combination
+//import RasterLoader._
+//import geotrellis.raster.op.local
 import net.christeson.geotrellis.template.WebDemo.{RasterColRows, response}
 
 //import scala.math._
@@ -33,7 +32,7 @@ import geotrellis.statistics.{ArrayHistogram, Histogram}
 
 
 object WebDemo {
-  val server = Server("demo")//,"catalog.json")
+  val server = Server("demo","catalog.json")
   def infoPage(cols: Int, rows: Int, ms: Long, url: String, tree: String) = """
   <html>
   <head>

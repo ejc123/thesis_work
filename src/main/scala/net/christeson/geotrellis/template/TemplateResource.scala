@@ -20,15 +20,16 @@ import geotrellis.feature.{Geometry, Polygon, Point}
 import geotrellis.data.{ReadState, FileReader}
 import geotrellis.raster._
 import geotrellis.raster.op.extent.CropRasterExtent
-import geotrellis.raster.op.zonal.summary.{ Mean, Median, Histogram }
+import geotrellis.raster.op.zonal.summary.ZonalSummaryOpMethods
 
 import RasterLoader._
 import geotrellis.statistics.Statistics
+import geotrellis.source.RasterDataSource
 
 //import scala.math._
 
 object Demo {
-  val server = Server("demo")//,"catalog.json")
+  val server = Server("demo","catalog.json")
 }
 
 object RunMe {
@@ -60,15 +61,15 @@ object RunMe {
         val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
         val polygon = Polygon(reproj.geom, 0)
         val id = reproj.data.get.get("IND").getDoubleValue.toInt
-        val featureExtent = GetFeatureExtent(reproj)
+        // val featureExtent = GetFeatureExtent(reproj)
         val tileFile = s"ltm5_2007_${date}_clean"
         val tileSet = RasterLoader.load(s"$tilePath/$tileFile.json")
         // val ext = Demo.server.run(CropRasterExtent(tileSet.rasterExtent,featureExtent))
         val tile = null
-        val maxOp = Median(tileSet, polygon, tile)
-        Demo.server.getResult(maxOp) match {
+        val meanOp = tileSet.zonalMean(polygon)
+        Demo.server.getResult(meanOp) match {
           case Complete(median, stats) => {
-            (id,median,stats.stopTime - stats.startTime)
+            (id,median,stats.endTime - stats.startTime)
           }
           case _ => (-1,geotrellis.NODATA,0L)
         }
