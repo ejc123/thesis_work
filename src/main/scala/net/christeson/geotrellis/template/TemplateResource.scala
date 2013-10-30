@@ -49,24 +49,24 @@ object RunMe {
     val diff = stopNanos - startNanos
     println(s"Load Geometry file took: ${diff / 1000000} ms")
 
-    val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
+    // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
     // val tenPercent = valid.toList.take((valid.length * .10).toInt).par
     // println("tileset loaded")
 
     try {
       val results = for {
-        g <- tenPercent.filter(_.geom.getGeometryType == "Polygon").take(2)
+        g <- valid.filter(_.geom.getGeometryType == "Polygon").take(2)
         date <- dates.take(1)
       } yield {
         val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
         val polygon = Polygon(reproj.geom, 0)
         val id = reproj.data.get.get("IND").getDoubleValue.toInt
         // val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean")
-        val tileSet = RasterLoader.load(s"ltm5_2007_0516_clean")
-        val meanOp = tileSet.zonalHistogram(polygon)
+        val tileSet = RasterLoader.load(s"ltm5_2007_0921_clean")
+        val meanOp = tileSet.zonalMin(polygon)
         Demo.server.getSource(meanOp) match {
-          case Complete(mean, stats) => {
-            (id,mean.generateStatistics,stats.endTime - stats.startTime)
+          case Complete(result, stats) => {
+            (id,result,stats.endTime - stats.startTime)
           }
           case _ => (-1,geotrellis.NODATA,0L)
         }
