@@ -49,27 +49,30 @@ object RunMe {
     val diff = stopNanos - startNanos
     println(s"Load Geometry file took: ${diff / 1000000} ms")
 
-    // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
+    val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
     // val tenPercent = valid.toList.take((valid.length * .10).toInt).par
     // println("tileset loaded")
 
     try {
       val results = for {
-        g <- valid.filter(_.geom.getGeometryType == "Polygon")
-        date <- dates
+        g <- tenPercent.filter(_.geom.getGeometryType == "Polygon").take(2)
+        date <- dates.take(1)
       } yield {
+        println(s"g: ${g.geom.getFactory.getSRID}")
         val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
         val polygon = Polygon(reproj.geom, 0)
+        println(s"reproj: ${reproj.geom.getFactory.getSRID}")
+        println(s"Polygon: ${polygon.geom.getFactory.getSRID}")
         val id = reproj.data.get.get("IND").getDoubleValue.toInt
         // val featureExtent = GetFeatureExtent(reproj)
         val tileFile = s"ltm5_2007_${date}_clean"
+        // val tileSet = RasterLoader.load(s"$tilePath/$tileFile.json")
         val tileSet = RasterLoader.load(s"$tileFile")
-        // val ext = Demo.server.run(CropRasterExtent(tileSet.rasterExtent,featureExtent))
-        val tile = null
-        val meanOp = tileSet.zonalMean(polygon)
-        Demo.server.getResult(meanOp) match {
-          case Complete(median, stats) => {
-            (id,median,stats.endTime - stats.startTime)
+        println(s"tileSet: ${tileSet.filterTiles(polygon)}")
+        val meanOp = tileSet.zonalMin(polygon)
+        Demo.server.getSource(meanOp) match {
+          case Complete(mean, stats) => {
+            (id,mean,stats.endTime - stats.startTime)
           }
           case _ => (-1,geotrellis.NODATA,0L)
         }
@@ -79,7 +82,7 @@ object RunMe {
       val filtered = results.filter(a => (a._2 != geotrellis.NODATA))
       println(s"Filtered length ${filtered.size}")
       results.map(println(_))
-      println(s"Total time for Median: ${results.foldLeft(0L)((a,b) => a + b._3)} ms")
+      println(s"Total time for Mean: ${results.foldLeft(0L)((a,b) => a + b._3)} ms")
       //  filtered.map(m => {println(s"Key: ${m._1}"); println("   Values:"); m._2.map(b => println(s"    $b")) })
 
     }
