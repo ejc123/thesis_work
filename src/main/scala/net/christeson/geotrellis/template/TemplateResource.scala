@@ -29,7 +29,7 @@ import geotrellis.source.RasterDataSource
 //import scala.math._
 
 object Demo {
-  val server = Server("demo","catalog.json")
+  val server = Server("demo","src/main/resources/catalog.json")
 }
 
 object RunMe {
@@ -63,7 +63,7 @@ object RunMe {
         val id = reproj.data.get.get("IND").getDoubleValue.toInt
         // val featureExtent = GetFeatureExtent(reproj)
         val tileFile = s"ltm5_2007_${date}_clean"
-        val tileSet = RasterLoader.load(s"$tilePath/$tileFile.json")
+        val tileSet = RasterLoader.load(s"$tileFile")
         // val ext = Demo.server.run(CropRasterExtent(tileSet.rasterExtent,featureExtent))
         val tile = null
         val meanOp = tileSet.zonalMean(polygon)
