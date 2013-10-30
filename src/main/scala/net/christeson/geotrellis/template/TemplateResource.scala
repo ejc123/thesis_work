@@ -58,21 +58,15 @@ object RunMe {
         g <- tenPercent.filter(_.geom.getGeometryType == "Polygon").take(2)
         date <- dates.take(1)
       } yield {
-        println(s"g: ${g.geom.getFactory.getSRID}")
         val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
         val polygon = Polygon(reproj.geom, 0)
-        println(s"reproj: ${reproj.geom.getFactory.getSRID}")
-        println(s"Polygon: ${polygon.geom.getFactory.getSRID}")
         val id = reproj.data.get.get("IND").getDoubleValue.toInt
-        // val featureExtent = GetFeatureExtent(reproj)
-        val tileFile = s"ltm5_2007_${date}_clean"
-        // val tileSet = RasterLoader.load(s"$tilePath/$tileFile.json")
-        val tileSet = RasterLoader.load(s"$tileFile")
-        println(s"tileSet: ${tileSet.filterTiles(polygon)}")
-        val meanOp = tileSet.zonalMin(polygon)
+        // val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean")
+        val tileSet = RasterLoader.load(s"ltm5_2007_0516_clean")
+        val meanOp = tileSet.zonalHistogram(polygon)
         Demo.server.getSource(meanOp) match {
           case Complete(mean, stats) => {
-            (id,mean,stats.endTime - stats.startTime)
+            (id,mean.generateStatistics,stats.endTime - stats.startTime)
           }
           case _ => (-1,geotrellis.NODATA,0L)
         }
