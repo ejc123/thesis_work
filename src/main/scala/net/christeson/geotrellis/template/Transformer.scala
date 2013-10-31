@@ -1,8 +1,6 @@
 package net.christeson.geotrellis.template
 
-import geotrellis._
 import geotrellis.feature._
-
 import org.geotools.geometry.jts.JTS
 import org.geotools.referencing.CRS
 import org.opengis.referencing.crs.{CoordinateReferenceSystem => Crs}

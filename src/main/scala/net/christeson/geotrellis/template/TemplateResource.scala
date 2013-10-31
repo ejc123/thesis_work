@@ -18,15 +18,9 @@ import geotrellis.process.Complete
 import com.vividsolutions.jts.{geom => jts}
 import geotrellis.feature.{Geometry, Polygon, Point}
 import geotrellis.data.{ReadState, FileReader}
-import geotrellis.raster._
-import geotrellis.raster.op.extent.CropRasterExtent
 import geotrellis.raster.op.zonal.summary.ZonalSummaryOpMethods
 
 import RasterLoader._
-import geotrellis.statistics.Statistics
-import geotrellis.source.RasterDataSource
-
-//import scala.math._
 
 object Demo {
   val server = Server("demo","src/main/resources/catalog.json")
@@ -49,34 +43,37 @@ object RunMe {
     val diff = stopNanos - startNanos
     println(s"Load Geometry file took: ${diff / 1000000} ms")
 
-    // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
+    val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
     // val tenPercent = valid.toList.take((valid.length * .10).toInt).par
     // println("tileset loaded")
 
     try {
       val results = for {
-        g <- valid.filter(_.geom.getGeometryType == "Polygon").take(2)
-        date <- dates.take(1)
+      //g <- tenPercent.filter(_.geom.getGeometryType == "Polygon").take(3)
+      g <- tenPercent.filter(_.geom.getGeometryType == "Polygon").take(20)
+         date <- dates
       } yield {
         val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
         val polygon = Polygon(reproj.geom, 0)
         val id = reproj.data.get.get("IND").getDoubleValue.toInt
-        // val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean")
-        val tileSet = RasterLoader.load(s"ltm5_2007_0921_clean")
-        val meanOp = tileSet.zonalMin(polygon)
+        val lat = reproj.data.get.get("LATITUDE").getDoubleValue
+        val lon = reproj.data.get.get("LONGITUDE").getDoubleValue
+        val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean")
+        // val tileSet = RasterLoader.load(s"ltm5_2007_0921_clean")
+        val meanOp = tileSet.zonalMean(polygon)
         Demo.server.getSource(meanOp) match {
           case Complete(result, stats) => {
-            (id,result,stats.endTime - stats.startTime)
+            (id,(lat,lon),result,stats.endTime - stats.startTime)
           }
-          case _ => (-1,geotrellis.NODATA,0L)
+          case _ => (-1,(0,0),geotrellis.NODATA,0L)
         }
       }
       // val filtered = results.groupBy(a => a._1 ).map(a => a._1 -> a._2.map(_._2).filter(_ != geotrellis.NODATA ))
       println(s"Results length ${results.length}")
-      val filtered = results.filter(a => (a._2 != geotrellis.NODATA))
+      val filtered = results.filter(a => (a._3 != geotrellis.NODATA)).groupBy{case (a,b,_,_) => (a,b)}
       println(s"Filtered length ${filtered.size}")
-      results.map(println(_))
-      println(s"Total time for Mean: ${results.foldLeft(0L)((a,b) => a + b._3)} ms")
+      filtered.map(println(_))
+      println(s"Total time for Mean: ${results.foldLeft(0L)((a,b) => a + b._4)} ms")
       //  filtered.map(m => {println(s"Key: ${m._1}"); println("   Values:"); m._2.map(b => println(s"    $b")) })
 
     }
