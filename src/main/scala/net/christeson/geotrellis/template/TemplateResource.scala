@@ -65,14 +65,14 @@ object RunMe {
           case Complete(result, stats) => {
             (id,(lat,lon),result,stats.endTime - stats.startTime)
           }
-          case _ => (-1,(0,0),geotrellis.NODATA,0L)
+          case _ => (-1,(0,0),Double.NaN,0L)
         }
       }
       // val filtered = results.groupBy(a => a._1 ).map(a => a._1 -> a._2.map(_._2).filter(_ != geotrellis.NODATA ))
       println(s"Results length ${results.length}")
-      val filtered = results.filter(a => (a._3 != geotrellis.NODATA)).groupBy{case (a,b,_,_) => (a,b)}
+      val filtered = results.filter(a => !isNaN(a._3))
       println(s"Filtered length ${filtered.size}")
-      filtered.map(println(_))
+      filtered.groupBy{case (a,b,_,_) => (a,b)}.map(println(_))
       println(s"Total time for Mean: ${results.foldLeft(0L)((a,b) => a + b._4)} ms")
       //  filtered.map(m => {println(s"Key: ${m._1}"); println("   Values:"); m._2.map(b => println(s"    $b")) })
 
