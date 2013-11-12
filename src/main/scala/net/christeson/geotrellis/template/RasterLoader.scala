@@ -6,7 +6,7 @@ import scala.collection.mutable
 
 object RasterLoader {
   val dates = List("0414","0430","0516","0601","0617","0703","0719","0804","0820","0905","0921")
-  val tilePath = "/home/ejc/geotrellis/data/tiled"
+  val tilePath = "/home/ejc/geotrellis/data/tiled64"
   private val loadCache:mutable.Map[String,RasterSource] =
     new mutable.HashMap[String,RasterSource]()
 
