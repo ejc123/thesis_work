@@ -44,24 +44,25 @@ object RunMe {
     val tenPercent = Random.shuffle(valid.toList).take((valid.length * .30).toInt).par
 
     try {
-      val results = tenPercent.flatMap(g => dates.map(date => {
+      val results = tenPercent.flatMap(g => {
         val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
         val polygon = Polygon(reproj.geom, 0)
         val id = reproj.data.get.get("IND").getDoubleValue.toInt
         val lat = reproj.data.get.get("LATITUDE").getDoubleValue
         val lon = reproj.data.get.get("LONGITUDE").getDoubleValue
-        val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean")
-        // val tileSet = RasterLoader.load(s"ltm5_2007_0921_clean")
-        val meanOp = tileSet.zonalMean(polygon)
-        Demo.server.getSource(meanOp) match {
-          case Complete(result, _) => {
-            (id, (lat, lon), result)
+        dates.map(date => {
+          val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean")
+          val meanOp = tileSet.zonalMean(polygon)
+          Demo.server.getSource(meanOp) match {
+            case Complete(result, _) => {
+              (id, (lat, lon), result)
+            }
+            case _ => (-1, (0, 0), Double.NaN)
           }
-          case _ => (-1, (0, 0), Double.NaN)
         }
-      }
+        )
+      })
 
-      ))
       val filtered = results.filter(a => !isNaN(a._3))
       val grouped = filtered.groupBy { case (a, b, _) => (a, b) }.mapValues(a => a.map(_._3).toList)
       grouped.foreach(println(_))
