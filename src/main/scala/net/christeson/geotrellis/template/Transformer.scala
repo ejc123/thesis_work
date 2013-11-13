@@ -23,12 +23,9 @@ object Transformer {
   private def initCache() = {
     cacheTransform(Projections.LongLat,Projections.RRVUTM)
     cacheTransform(Projections.RRVUTM,Projections.LongLat)
-    cacheTransform(Projections.LongLat,Projections.WebMercator)
-    cacheTransform(Projections.WebMercator,Projections.LongLat)
-    cacheTransform(Projections.WebMercator,Projections.RRVUTM)
   }
 
-  initCache()
+//  initCache()
 
   def transform[D](feature:Geometry[D],fromCRS:Crs,toCRS:Crs):Geometry[D] = {
     if(!transformCache.contains((fromCRS,toCRS))) { cacheTransform(fromCRS,toCRS) }
