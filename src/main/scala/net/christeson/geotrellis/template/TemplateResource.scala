@@ -37,11 +37,11 @@ object RunMe {
     val resource = Resource.fromURL(featurePath).chars
     val geoJson = resource.mkString
     val geoms = Demo.server.run(io.LoadGeoJson(geoJson))
-    val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
+    val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon").par
     var stopNanos = System.nanoTime()
     println(s"Load Geometry file took: ${(stopNanos - startNanos) / 1000000} ms")
 
-    val tenPercent = Random.shuffle(valid.toList).take((valid.length * .30).toInt).par
+    val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt).par
 
     try {
       val results = tenPercent.flatMap(g => dates.map(date => {
