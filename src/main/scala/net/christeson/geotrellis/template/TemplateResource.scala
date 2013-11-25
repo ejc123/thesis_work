@@ -28,7 +28,7 @@ object Demo {
 
 object RunMe {
   def main(args: Array[String]): Unit = {
-    val featurePath = "file:///home/ejc/geotrellis/data/2007_field_boundary.geojson"
+    val featurePath = "file:///home/ejc/geotrellis/data/2008_field_boundary.geojson"
     import scalax.io.Resource
     import scala.util.Random
 
@@ -41,91 +41,40 @@ object RunMe {
     var stopNanos = System.nanoTime()
     println(s"Load Geometry file took: ${(stopNanos - startNanos) / 1000000} ms")
 
-    val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
+    // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
 
     try {
-      val results = tenPercent.flatMap {
-        g =>
-          dates.map {
-            date => {
-              val id = g.data.get.get("IND").getDoubleValue.toInt
-              val lat = g.data.get.get("LATITUDE").getDoubleValue
-              val lon = g.data.get.get("LONGITUDE").getDoubleValue
-              val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
-              val polygon = Polygon(reproj.geom, 0)
-              val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean")
-              Demo.server.getSource(tileSet.zonalMean(polygon)) match {
-                case Complete(result, _) => {
-                  (id, lat, lon, result)
-                }
-                case _ => (-1, 0, 0, Double.NaN)
-              }
-
+      val results = valid.flatMap {g => 
+      // val results = tenPercent.flatMap {g => 
+          dates.map {date => 
+          {
+            val id = g.data.get.get("IND").getDoubleValue.toInt
+            val lat = g.data.get.get("LATITUDE").getDoubleValue
+            val lon = g.data.get.get("LONGITUDE").getDoubleValue
+            val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
+            val polygon = Polygon(reproj.geom, 0)
+            val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean") 
+            Demo.server.getSource(tileSet.zonalMean(polygon)) match {
+              case Complete(result, _) => (id, lat, lon, result)
+              case _ => (-1, 0, 0, Double.NaN)
             }
           }
+         }
       }
-      /*       val results = tenPercent.flatMap(g => {
-               val id = g.data.get.get("IND").getDoubleValue.toInt
-               val lat = g.data.get.get("LATITUDE").getDoubleValue
-               val lon = g.data.get.get("LONGITUDE").getDoubleValue
-               val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
-               val polygon = Polygon(reproj.geom, 0)
-               dates.map(date => {
-                 val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean")
-                 Demo.server.getSource(tileSet.zonalMean(polygon)) match {
-                   case Complete(result, _) => {
-                     (id, lat, lon, result)
-                   }
-                   case _ => (-1, 0, 0, Double.NaN)
-                 }
-               }
-               )
-             }).filter(a => !isNaN(a._4)).groupBy {
-               case (a, b, c, _) => (a, b, c)
-             }.mapValues(b => b.map(_._4))
-       //
-       val results = dates.flatMap(date => {
-         val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean")
-         tenPercent.map(g => {
-           val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
-           val polygon = Polygon(reproj.geom, 0)
-           val id = reproj.data.get.get("IND").getDoubleValue.toInt
-           val lat = reproj.data.get.get("LATITUDE").getDoubleValue
-           val lon = reproj.data.get.get("LONGITUDE").getDoubleValue
-           val meanOp = tileSet.zonalMean(polygon)
-           Demo.server.getSource(meanOp) match {
-             case Complete(result, _) => {
-               (id, lat, lon, result)
-             }
-             case _ => (-1, 0, 0, Double.NaN)
-           }
-         })
-       })
-       */
-      /*
-       .filter.(a => !isNaN(a._4)).groupBy {
-       case (a, b, c, _) => (a, b, c)
-     }.mapValues(b => b.map(_._4))
 
-*/
-      // val filtered = results.filter(a => !isNaN(a._3))
-      // val grouped = filtered.groupBy {
-      //   case (a, b, c, _) => (a, b, c)
-      // }.mapValues(a => a.map(_._4))
       import java.io.PrintWriter
-      val output = new PrintWriter("/home/ejc/results.txt")
-      val filtered = results.filter(a => !isNaN(a._4)).groupBy {
+      val output = new PrintWriter("/home/ejc/2008results.txt")
+      val filtered = results.groupBy {
         case (a, b, c, _) => (a, b, c)
-      }.mapValues(b => b.map(_._4)).toList.sortBy(a => a._1._1).seq
-      filtered.foreach(a => {
+      }.mapValues(b => b.map(_._4)).toList.sortBy(_._1._1).seq
+      filtered.map(a => {
         output.print(s"${a._1._1},${a._1._2},${a._1._3}")
         a._2.map(b => output.print(s",$b"))
         output.println()
       }
       )
-      println(s"Results length ${results.size}")
-      // println(s"Filtered length ${filtered.size}")
-      // println(s"Grouped length ${grouped.size}")
+      output.close()
+      println(s"Results length ${results.length}")
     }
     finally {
       Demo.server.shutdown()
