@@ -13,7 +13,8 @@ import com.vividsolutions.jts.{ geom => jts }
 
 
 object Transformer {
-  private val transformCache:mutable.Map[(Crs,Crs),MathTransform] = 
+  /*
+  private val transformCache:mutable.Map[(Crs,Crs),MathTransform] =
     new mutable.HashMap[(Crs,Crs),MathTransform]()
   
   def cacheTransform(crs1:Crs,crs2:Crs) = {
@@ -25,12 +26,18 @@ object Transformer {
     cacheTransform(Projections.RRVUTM,Projections.LongLat)
   }
 
-//  initCache()
+  initCache()
 
   def transform[D](feature:Geometry[D],fromCRS:Crs,toCRS:Crs):Geometry[D] = {
     if(!transformCache.contains((fromCRS,toCRS))) { cacheTransform(fromCRS,toCRS) }
     feature.mapGeom( geom => 
       JTS.transform(feature.geom, transformCache((fromCRS,toCRS)))
+    )
+  }
+  */
+  def transform[D](feature:Geometry[D],fromCRS:Crs,toCRS:Crs):Geometry[D] = {
+    feature.mapGeom( geom =>
+      JTS.transform(feature.geom,  CRS.findMathTransform(fromCRS,toCRS,true))
     )
   }
 }
