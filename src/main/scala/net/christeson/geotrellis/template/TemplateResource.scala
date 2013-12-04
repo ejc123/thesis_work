@@ -28,7 +28,7 @@ object Demo {
 
 object RunMe {
   def main(args: Array[String]): Unit = {
-    val featurePath = "file:///home/ejc/geotrellis/data/2008_field_boundary.geojson"
+    val featurePath = "file:///home/ejc/geotrellis/data/2007_field_boundary.geojson"
     import scalax.io.Resource
     import scala.util.Random
 
@@ -55,15 +55,15 @@ object RunMe {
             val polygon = Polygon(reproj.geom, 0)
             val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean") 
             Demo.server.getSource(tileSet.zonalMean(polygon)) match {
-              case Complete(result, _) => (id, lat, lon, result)
-              case _ => (-1, 0, 0, Double.NaN)
+              case Complete(result, _) => (id, lat, lon, math.round(result))
+              case _ => (id, lat, lon, Double.NaN)
             }
           }
          }
       }
 
       import java.io.PrintWriter
-      val output = new PrintWriter("/home/ejc/2008results.txt")
+      val output = new PrintWriter("/home/ejc/2007results.txt")
       val filtered = results.groupBy {
         case (a, b, c, _) => (a, b, c)
       }.mapValues(b => b.map(_._4)).toList.sortBy(_._1._1).seq
