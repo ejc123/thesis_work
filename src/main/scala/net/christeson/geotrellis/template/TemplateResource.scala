@@ -55,8 +55,11 @@ object RunMe {
             val polygon = Polygon(reproj.geom, 0)
             val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean") 
             Demo.server.getSource(tileSet.zonalMean(polygon)) match {
-              case Complete(result, _) => (id, lat, lon, result)
-              case _ => (-1, 0, 0, Double.NaN)
+              case Complete(result, _) => isNaN(result) match {
+                case true => (id, lat, lon, None)
+                case false => (id, lat, lon, Some(result))
+              }
+              case _ => (-1, 0, 0, None)
             }
           }
          }
@@ -69,7 +72,7 @@ object RunMe {
       }.mapValues(b => b.map(_._4)).toList.sortBy(_._1._1).seq
       filtered.map(a => {
         output.print(s"${a._1._1},${a._1._2},${a._1._3}")
-        a._2.map(b => output.print(s",$b"))
+        a._2.map(b => output.print(s",${b.getOrElse("")}"))
         output.println()
       }
       )
