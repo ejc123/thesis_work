@@ -28,7 +28,7 @@ object Demo {
 
 object RunMe {
   def main(args: Array[String]): Unit = {
-    val featurePath = "file:///home/ejc/geotrellis/data/2007_field_boundary.geojson"
+    val featurePath = "file:///home/ejc/geotrellis/data/2008_field_boundary.geojson"
     import scalax.io.Resource
     import scala.util.Random
 
@@ -44,33 +44,36 @@ object RunMe {
     // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
 
     try {
-      val results = valid.flatMap {g => 
-      // val results = tenPercent.flatMap {g => 
+     val results = valid.flatMap {g => 
+    // val results = tenPercent.flatMap {g => 
           dates.map {date => 
           {
-            val id = g.data.get.get("IND").getDoubleValue.toInt
             val lat = g.data.get.get("LATITUDE").getDoubleValue
             val lon = g.data.get.get("LONGITUDE").getDoubleValue
             val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
             val polygon = Polygon(reproj.geom, 0)
             val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean") 
             Demo.server.getSource(tileSet.zonalMean(polygon)) match {
-              case Complete(result, _) => (id, lat, lon, math.round(result))
-              case _ => (id, lat, lon, Double.NaN)
+              case Complete(result, _) => isNaN(result) match {
+                  case true  => (lat, lon,None)
+                  case false => (lat, lon,Some(math.round(result)))
+              }
+              case _ => (lat, lon, None)
             }
           }
          }
       }
 
       import java.io.PrintWriter
-      val output = new PrintWriter("/home/ejc/2007results.txt")
+      val output = new PrintWriter("/home/ejc/2008results.txt")
+      output.println(""""LAT","LON","1","2","3","4","5","6","7","8","9","10","11","CLASS"""")
       val filtered = results.groupBy {
-        case (a, b, c, _) => (a, b, c)
-      }.mapValues(b => b.map(_._4)).toList.sortBy(_._1._1).seq
+        case (a, b, _) => (a, b)
+      }.mapValues(b => b.map(_._3)).toList.sortBy(_._1._1).seq
       filtered.map(a => {
-        output.print(s"${a._1._1},${a._1._2},${a._1._3}")
-        a._2.map(b => output.print(s",$b"))
-        output.println()
+        output.print(s"${a._1._1},${a._1._2}")
+        a._2.map(b => output.print(s""","${b.getOrElse("")}""""))
+        output.println(""","nonbeets"""")
       }
       )
       output.close()
