@@ -21,6 +21,10 @@ import geotrellis.data.{ReadState, FileReader}
 import geotrellis.raster.op.zonal.summary.ZonalSummaryOpMethods
 
 import RasterLoader._
+import geotrellis.source.{FullTileIntersection, RasterSource}
+import geotrellis.raster.op.transform.Crop
+import geotrellis.feature.op.geometry
+import geotrellis.feature.op.geometry.GetEnvelope
 
 object Demo {
   val server = Server("demo", "src/main/resources/catalog.json")
@@ -28,7 +32,7 @@ object Demo {
 
 object RunMe {
   def main(args: Array[String]): Unit = {
-    val featurePath = "file:///home/ejc/geotrellis/data/2008_field_boundary.geojson"
+    val featurePath = "file:///home/ejc/geotrellis/data/2007_field_boundary.geojson"
     import scalax.io.Resource
     import scala.util.Random
 
@@ -44,20 +48,17 @@ object RunMe {
     // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
 
     try {
-     val results = valid.flatMap {g => 
-    // val results = tenPercent.flatMap {g => 
-          dates.map {date => 
+     val results = valid.flatMap {g =>
+    // val results = tenPercent.flatMap {g =>
+       val lat = g.data.get.get("LATITUDE").getDoubleValue
+       val lon = g.data.get.get("LONGITUDE").getDoubleValue
+       val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
+       val polygon = Polygon(reproj.geom, 0)
+          dates.map {date =>
           {
-            val lat = g.data.get.get("LATITUDE").getDoubleValue
-            val lon = g.data.get.get("LONGITUDE").getDoubleValue
-            val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
-            val polygon = Polygon(reproj.geom, 0)
-            val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean") 
-            Demo.server.getSource(tileSet.zonalMean(polygon)) match {
-              case Complete(result, _) => isNaN(result) match {
-                  case true  => (lat, lon,None)
-                  case false => (lat, lon,Some(math.round(result)))
-              }
+            val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean")
+            Demo.server.getResult(tileSet.zonalHistogram(polygon)) match {
+              case Complete(result, _) => (lat, lon,Some(result))
               case _ => (lat, lon, None)
             }
           }
@@ -65,7 +66,7 @@ object RunMe {
       }
 
       import java.io.PrintWriter
-      val output = new PrintWriter("/home/ejc/2008results.txt")
+      val output = new PrintWriter("/home/ejc/2007results.txt")
       output.println(""""LAT","LON","1","2","3","4","5","6","7","8","9","10","11","CLASS"""")
       val filtered = results.groupBy {
         case (a, b, _) => (a, b)
@@ -73,7 +74,7 @@ object RunMe {
       filtered.map(a => {
         output.print(s"${a._1._1},${a._1._2}")
         a._2.map(b => output.print(s""","${b.getOrElse("")}""""))
-        output.println(""","nonbeets"""")
+        output.println(""","beets"""")
       }
       )
       output.close()
@@ -84,3 +85,4 @@ object RunMe {
     }
   }
 }
+
