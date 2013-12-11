@@ -5,33 +5,37 @@ import AssemblyKeys._
 
 object MyBuild extends Build {
 
-  // "com.azavea.geotrellis" %% "geotrellis-server" % "0.9.0-SNAPSHOT" % "compile",
-  // "org.eclipse.jetty" % "jetty-webapp" % "8.1.0.RC4",
-  // "com.sun.jersey" % "jersey-bundle" % "1.11",
   // mainClass in (Compile,run) := Some("geotrellis.rest.WebRunner"),
   lazy val sharedSettings = Defaults.defaultSettings ++ Seq(
       //organization := "org.sample.demo",
 
       name := "geotrellis-example",
 
-      scalaVersion := "2.10.2",
+      scalaVersion := "2.10.3",
 
       scalacOptions ++= Seq("-deprecation",
         "-unchecked",
         "-optimize",
+        "-Yclosure-elim",
+        "-Yinline-warnings",
+        "-language:implicitConversions",
+        "-language:postfixOps",
+        "-language:existentials",
         "-feature"),
 
-      parallelExecution := false,
+      // parallelExecution := false,
 
     mainClass in (Compile,run) := Some("net.christeson.geotrellis.template.RunMe"),
 
       javaOptions in run += "-Xmx8G",
 
       libraryDependencies ++= Seq(
+        "org.scalatest"  % "scalatest_2.10"  % "2.0.M5b" % "test",
+        "org.scala-lang" % "scala-reflect" % "2.10.2",
         "com.azavea.geotrellis" %% "geotrellis" % "0.9.0-SNAPSHOT" % "compile",
         "com.azavea.geotrellis" %% "geotrellis-geotools" % "0.9.0-SNAPSHOT" % "compile",
         "com.azavea.geotrellis" %% "geotrellis-tasks" % "0.9.0-SNAPSHOT" % "compile",
-        "com.azavea.geotrellis" %% "geotrellis-server" % "0.9.0-SNAPSHOT" % "compile",
+        "com.azavea.geotrellis" %% "geotrellis-services" % "0.9.0-SNAPSHOT" % "compile",
         "junit" % "junit" % "4.5" % "test",
         "org.eclipse.jetty" % "jetty-webapp" % "8.1.0.RC4",
         "com.sun.jersey" % "jersey-bundle" % "1.11",
