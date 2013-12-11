@@ -35,6 +35,7 @@ object MyBuild extends Build {
         "junit" % "junit" % "4.5" % "test",
         "org.eclipse.jetty" % "jetty-webapp" % "8.1.0.RC4",
         "com.sun.jersey" % "jersey-bundle" % "1.11",
+        "org.scalanlp" % "breeze_2.10" % "0.5.2",
         "org.scalatest"  %% "scalatest"  % "1.9.1" % "test",
         "com.github.scala-incubator.io" %% "scala-io-core" % "0.4.2",
         "com.github.scala-incubator.io" %% "scala-io-file" % "0.4.2"
@@ -47,6 +48,7 @@ object MyBuild extends Build {
         "Scala Test" at "http://www.scala-tools.org/repo-reloases/",
         "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
         "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository",
+        "sonatypeReleases" at "http://oss.sonatype.org/content/repositories/releases",
         "sonatypeSnapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
         "Geotools" at "http://download.osgeo.org/webdav/geotools/"
       ),
