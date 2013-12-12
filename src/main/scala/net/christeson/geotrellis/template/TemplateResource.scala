@@ -1,28 +1,12 @@
 package net.christeson.geotrellis.template
 
-// import javax.servlet.http.HttpServletRequest
-
-// import javax.ws.rs._
-import javax.ws.rs.core.{Context, Response}
-
 import geotrellis._
-// import geotrellis.render.ColorRamps._
-import geotrellis.process.{Error, Complete, Server}
-// import geotrellis.statistics.op.stat
-
-// import geotrellis.Implicits._
-// import geotrellis.Literal
-// import geotrellis.process.Error
-import geotrellis.process.Complete
-
-import com.vividsolutions.jts.{geom => jts}
-import geotrellis.feature.{Geometry, Polygon, Point}
-// import geotrellis.data.{ReadState, FileReader}
-// import geotrellis.raster.op.zonal.summary.ZonalSummaryOpMethods
-
-import Settings._
+import geotrellis.feature.Polygon
+import geotrellis.process.{Complete, Server}
 import geotrellis.source.RasterSource
+
 import org.rogach.scallop._
+import Settings._
 
 object Demo {
   val server = Server("demo", "src/main/resources/catalog.json")
@@ -58,6 +42,11 @@ object RunMe {
     val beets = conf.negative() match {
       case true => "nonbeets"
       case _ => "beets"
+    }
+
+    val beetfile = conf.negative() match {
+      case true => s"${beets}_${feature_year}"
+      case _ => beets
     }
 
     val featurePath = s"file:///home/ejc/geotrellis/data/${feature_year}_field_boundary.geojson"
@@ -97,7 +86,7 @@ object RunMe {
       }
 
       import java.io.PrintWriter
-      val output = new PrintWriter(s"/home/ejc/2009${beets}.txt")
+      val output = new PrintWriter(s"/home/ejc/${year}${beetfile}.txt")
       output.println(heading(year))
       val filtered = results.groupBy {
         case (a, b, _) => (a, b)
