@@ -45,7 +45,7 @@ object RunMe {
     }
 
     val beetfile = conf.negative() match {
-      case true => s"${beets}_${feature_year}"
+      case true => s"${beets}_$feature_year"
       case _ => beets
     }
 
@@ -86,7 +86,7 @@ object RunMe {
       }
 
       import java.io.PrintWriter
-      val output = new PrintWriter(s"/home/ejc/${year}${beetfile}.txt")
+      val output = new PrintWriter(s"/home/ejc/$year$beetfile.txt")
       output.println(heading(year))
       val filtered = results.groupBy {
         case (a, b, _) => (a, b)
@@ -94,7 +94,7 @@ object RunMe {
       filtered.map(a => {
         output.print(s"${a._1._1},${a._1._2}")
         a._2.map(b => output.print(s""","${b.getOrElse("")}""""))
-        output.println(s""","${beets}"""")
+        output.println(s""","$beets"""")
       }
       )
       output.close()
