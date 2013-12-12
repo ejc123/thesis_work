@@ -2,6 +2,14 @@
  "catalog": "Test GeoData Catalog",
  "stores": [
   {
+   "store": "tiled64",
+   "params": {
+     "type": "fs",
+     "path": "/home/ejc/geotrellis/data/tiled64",
+     "cacheAll": "no"
+   }
+  },
+  {
    "store": "tiled",
    "params": {
      "type": "fs",

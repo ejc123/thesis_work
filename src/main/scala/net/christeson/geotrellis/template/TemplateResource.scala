@@ -6,7 +6,7 @@ import javax.ws.rs._
 import javax.ws.rs.core.{Context, Response}
 
 import geotrellis._
-import geotrellis.data.ColorRamps._
+import geotrellis.render.ColorRamps._
 import geotrellis.process.{Error, Complete, Server}
 import geotrellis.statistics.op.stat
 
@@ -21,7 +21,7 @@ import geotrellis.data.{ReadState, FileReader}
 import geotrellis.raster.op.zonal.summary.ZonalSummaryOpMethods
 
 import RasterLoader._
-import geotrellis.source.{FullTileIntersection, RasterSource}
+import geotrellis.source.{RasterSource}
 import geotrellis.raster.op.transform.Crop
 import geotrellis.feature.op.geometry
 import geotrellis.feature.op.geometry.GetEnvelope
@@ -40,26 +40,29 @@ object RunMe {
     var startNanos = System.nanoTime()
     val resource = Resource.fromURL(featurePath).chars
     val geoJson = resource.mkString
-    val geoms = Demo.server.run(io.LoadGeoJson(geoJson)).par
+    val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
     val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
     var stopNanos = System.nanoTime()
     println(s"Load Geometry file took: ${(stopNanos - startNanos) / 1000000} ms")
 
-    // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
+    val tenPercent = valid.toList.take(10)
 
     try {
-     val results = valid.flatMap {g => 
-    // val results = tenPercent.flatMap {g => 
+     // val results = valid.flatMap {g =>
+    val results = tenPercent.flatMap {g =>
        val lat = g.data.get.get("LATITUDE").getDoubleValue
        val lon = g.data.get.get("LONGITUDE").getDoubleValue
        val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
        val polygon = Polygon(reproj.geom, 0)
           dates.map {date =>
           {
-            val tileSet = RasterLoader.load(s"ltm5_2007_${date}_clean")
-            Demo.server.getResult(tileSet.zonalHistogram(polygon)) match {
-              case Complete(result, _) => (lat, lon,Some(result))
-              case _ => (lat, lon, None)
+            val tileSet = RasterSource("tiled",s"ltm5_2007_${date}_clean")
+            Demo.server.run(tileSet.zonalMean(polygon)) match {
+              case Complete(result, _) => isNoData(result) match {
+                case true => (lat, lon,None)
+                case false => (lat, lon,Some(math.round(result)))
+              }
+              case _ => (lat, lon,None)
             }
           }
          }
