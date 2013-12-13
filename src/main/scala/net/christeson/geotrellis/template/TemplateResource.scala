@@ -63,10 +63,11 @@ object RunMe {
 
     // import scala.util.Random
     // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
+    val tenPercent = valid.take(100)
 
     try {
-     val results = valid.flatMap {g => 
-     // val results = tenPercent.flatMap {g => 
+     // val results = valid.flatMap {g =>
+     val results = tenPercent.flatMap {g =>
           dates(year).map {date =>
           {
             val lat = g.data.get.get(coords(feature_year)("LAT")).getDoubleValue
@@ -74,12 +75,9 @@ object RunMe {
             val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
             val polygon = Polygon(reproj.geom, 0)
             val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean")
-            Demo.server.run(tileSet.zonalMean(polygon)) match {
-              case Complete(result, _) => isNoData(result) match {
-                  case true  => (lat, lon,None)
-                  case false => (lat, lon,Some(math.round(result)))
-              }
-              case _ => (lat, lon, None)
+            Demo.server.run(tileSet.zonalEnumerate(polygon)) match {
+              case Complete(result, _) => (lat, lon, date, Some(result))
+              case _ => (lat, lon, date, None)
             }
           }
          }
@@ -89,11 +87,11 @@ object RunMe {
       val output = new PrintWriter(s"/home/ejc/$year$beetfile.txt")
       output.println(heading(year))
       val filtered = results.groupBy {
-        case (a, b, _) => (a, b)
-      }.mapValues(b => b.map(_._3)).toList.sortBy(_._1._1).seq
+        case (a, b, _, _) => (a, b)
+      }.mapValues(b => b.map(c => (c._3 -> c._4))).toList.sortBy(_._1._1).seq
       filtered.map(a => {
         output.print(s"${a._1._1},${a._1._2}")
-        a._2.map(b => output.print(s""","${b.getOrElse("")}""""))
+        a._2.map(b => output.print(s""","${b._1}","${b._2.getOrElse(List.empty).length}""""))
         output.println(s""","$beets"""")
       }
       )
