@@ -16,7 +16,7 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val year = opt[Int](required = true)
   val store = opt[String](default = Some("tiled"), required = true)
   val negative = opt[Boolean]()
-  val prior = opt[Boolean](default = Some(true), descr = "Use prior year for negative sample")
+  val prior = toggle(descrYes = "Use prior year for negative sample", descrNo = "Use next year for negative sample")
   codependent(negative,prior)
   validate (year) { a =>
     if(a <=2011 && a >= 2007) Right(Unit)
@@ -45,7 +45,7 @@ object RunMe {
     }
 
     val beetfile = conf.negative() match {
-      case true => s"${beets}_$feature_year"
+      case true => s"$beets$feature_year"
       case _ => beets
     }
 
