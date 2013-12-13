@@ -36,7 +36,7 @@ object MyBuild extends Build {
         "com.azavea.geotrellis" %% "geotrellis-geotools" % "0.9.0-SNAPSHOT" % "compile",
         "com.azavea.geotrellis" %% "geotrellis-tasks" % "0.9.0-SNAPSHOT" % "compile",
         "com.azavea.geotrellis" %% "geotrellis-services" % "0.9.0-SNAPSHOT" % "compile",
-        "com.azavea.geotrellis" %% "geotrellis-macros" % "0.9.0-SNAPSHOT" % "compile",
+//        "com.azavea.geotrellis" %% "geotrellis-macros" % "0.9.0-SNAPSHOT" % "compile",
         "junit" % "junit" % "4.5" % "test",
         "org.eclipse.jetty" % "jetty-webapp" % "8.1.0.RC4",
         "com.sun.jersey" % "jersey-bundle" % "1.11",

@@ -66,18 +66,19 @@ object RunMe {
     val tenPercent = valid.take(100)
 
     try {
-     // val results = valid.flatMap {g =>
-     val results = tenPercent.flatMap {g =>
-          dates(year).map {date =>
+     val results = dates(year).flatMap {date =>
+     // valid.map {g =>
+       val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean").cached
+       tenPercent.map {g =>
           {
             val lat = g.data.get.get(coords(feature_year)("LAT")).getDoubleValue
             val lon = g.data.get.get(coords(feature_year)("LON")).getDoubleValue
             val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
             val polygon = Polygon(reproj.geom, 0)
-            val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean")
-            Demo.server.run(tileSet.zonalEnumerate(polygon)) match {
-              case Complete(result, _) => (lat, lon, date, Some(result))
-              case _ => (lat, lon, date, None)
+            tileSet.zonalEnumerate(polygon).run match {
+            // Demo.server.fun(tileSet.zonalEnumerate(polygon)) match {
+              case Complete(result, _) => (lat, lon, date, result)
+              case _ => (lat, lon, date, List.empty)
             }
           }
          }
@@ -91,7 +92,7 @@ object RunMe {
       }.mapValues(b => b.map(c => (c._3 -> c._4))).toList.sortBy(_._1._1).seq
       filtered.map(a => {
         output.print(s"${a._1._1},${a._1._2}")
-        a._2.map(b => output.print(s""","${b._1}","${b._2.getOrElse(List.empty).length}""""))
+        a._2.map(b => output.print(s""","${b._1}","${b._2.length}""""))
         output.println(s""","$beets"""")
       }
       )
