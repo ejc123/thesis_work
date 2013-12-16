@@ -63,18 +63,21 @@ object RunMe {
 
     // import scala.util.Random
     // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
-    val tenPercent = valid.take(100)
+    val tenPercent = valid.take(5)
 
     try {
-     val results = dates(year).flatMap {date =>
-     // valid.map {g =>
-       val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean").cached
-       tenPercent.map {g =>
+     // val results = valid.flatMap {g =>
+     val results = tenPercent.flatMap {g =>
+       dates(year).map {date =>
           {
             val lat = g.data.get.get(coords(feature_year)("LAT")).getDoubleValue
             val lon = g.data.get.get(coords(feature_year)("LON")).getDoubleValue
             val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
             val polygon = Polygon(reproj.geom, 0)
+    startNanos = System.nanoTime()
+            val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean").cached
+    stopNanos = System.nanoTime()
+    println(s"TileSet load took: ${(stopNanos - startNanos) / 1000000} ms")
             tileSet.zonalEnumerate(polygon).run match {
             // Demo.server.fun(tileSet.zonalEnumerate(polygon)) match {
               case Complete(result, _) => (lat, lon, date, result)
