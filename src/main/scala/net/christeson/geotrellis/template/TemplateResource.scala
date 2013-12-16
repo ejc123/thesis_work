@@ -78,10 +78,11 @@ object RunMe {
             val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean").cached
     stopNanos = System.nanoTime()
     println(s"TileSet load took: ${(stopNanos - startNanos) / 1000000} ms")
+    startNanos = System.nanoTime()
             tileSet.zonalEnumerate(polygon).run match {
             // Demo.server.fun(tileSet.zonalEnumerate(polygon)) match {
-              case Complete(result, _) => (lat, lon, date, result)
-              case _ => (lat, lon, date, List.empty)
+              case Complete(result, timing) => (lat, lon, date, result, timing.elapsedTime)
+              case _ => (lat, lon, date, List.empty, 0)
             }
           }
          }
@@ -91,11 +92,11 @@ object RunMe {
       val output = new PrintWriter(s"/home/ejc/$year$beetfile.txt")
       output.println(heading(year))
       val filtered = results.groupBy {
-        case (a, b, _, _) => (a, b)
-      }.mapValues(b => b.map(c => (c._3 -> c._4))).toList.sortBy(_._1._1).seq
+        case (a, b, _, _, _) => (a, b)
+      }.mapValues(b => b.map(c => ((c._3 -> c._4),c._5))).toList.sortBy(_._1._1).seq
       filtered.map(a => {
         output.print(s"${a._1._1},${a._1._2}")
-        a._2.map(b => output.print(s""","${b._1}","${b._2.length}""""))
+        a._2.toList.sortBy(_._1._1).map(b => output.print(s""","${b._1._1}","${b._1._2.length}","${b._2}ms """"))
         output.println(s""","$beets"""")
       }
       )
