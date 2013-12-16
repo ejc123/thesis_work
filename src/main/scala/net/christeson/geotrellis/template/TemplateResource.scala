@@ -61,9 +61,8 @@ object RunMe {
     var stopNanos = System.nanoTime()
     println(s"Load Geometry file took: ${(stopNanos - startNanos) / 1000000} ms")
 
-    // import scala.util.Random
-    // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
-    val tenPercent = valid.take(5)
+    import scala.util.Random
+    val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
 
     try {
      // val results = valid.flatMap {g =>
@@ -75,7 +74,7 @@ object RunMe {
             val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
             val polygon = Polygon(reproj.geom, 0)
     startNanos = System.nanoTime()
-            val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean").cached
+            val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean")
     stopNanos = System.nanoTime()
     println(s"TileSet load took: ${(stopNanos - startNanos) / 1000000} ms")
             tileSet.zonalEnumerate(polygon).run match {
