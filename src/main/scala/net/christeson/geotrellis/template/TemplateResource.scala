@@ -75,7 +75,6 @@ object RunMe {
             val polygon = Polygon(reproj.geom, 0)
             val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean")
             tileSet.zonalEnumerate(polygon).run match {
-            // Demo.server.run(tileSet.zonalEnumerate(polygon)) match {
               case Complete(result, _) => (lat, lon, date, result)
               case _ => (lat, lon, date, List.empty)
             }
@@ -88,13 +87,14 @@ object RunMe {
       output.println(heading(year))
       val filtered = results.groupBy {
         case (a, b, _, _) => (a, b)
-      // }.mapValues(b => b.map(c => (c._3 -> c._4))).toList.sortBy(_._1._1).seq
       }.mapValues(b => b.map(c => c._3 -> c._4).toList.sortBy(_._1)).toList.sortBy(_._1._1).seq
       filtered.map(a => {
         for( q <- 0 to a._2(1)._2.length -1 ) {
-          output.print(s"${a._1._1},${a._1._2}")
-          a._2.map(b => output.print(s""","${fetch(b._2(q))}""""))
-          output.println(s""","$beets"""")
+          if(a._2.foldLeft(false)((a,b) => isData(b._2(q)) || a)) {
+            output.print(s"${a._1._1},${a._1._2}")
+            a._2.map(b => output.print(s""","${fetch(b._2(q))}""""))
+            output.println(s""","$beets"""")
+          }
         }
       }
       )
