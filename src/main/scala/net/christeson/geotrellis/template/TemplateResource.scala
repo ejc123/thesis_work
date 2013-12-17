@@ -73,12 +73,9 @@ object RunMe {
             val lon = g.data.get.get(coords(feature_year)("LON")).getDoubleValue
             val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
             val polygon = Polygon(reproj.geom, 0)
-    startNanos = System.nanoTime()
             val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean")
-    stopNanos = System.nanoTime()
-    println(s"TileSet load took: ${(stopNanos - startNanos) / 1000000} ms")
             tileSet.zonalEnumerate(polygon).run match {
-            // Demo.server.fun(tileSet.zonalEnumerate(polygon)) match {
+            // Demo.server.run(tileSet.zonalEnumerate(polygon)) match {
               case Complete(result, _) => (lat, lon, date, result)
               case _ => (lat, lon, date, List.empty)
             }
@@ -91,11 +88,14 @@ object RunMe {
       output.println(heading(year))
       val filtered = results.groupBy {
         case (a, b, _, _) => (a, b)
-      }.mapValues(b => b.map(c => (c._3 -> c._4))).toList.sortBy(_._1._1).seq
+      // }.mapValues(b => b.map(c => (c._3 -> c._4))).toList.sortBy(_._1._1).seq
+      }.mapValues(b => b.map(c => c._3 -> c._4).toList.sortBy(_._1)).toList.sortBy(_._1._1).seq
       filtered.map(a => {
-        output.print(s"${a._1._1},${a._1._2}")
-        a._2.map(b => output.print(s""","${b._1}","${b._2.length}""""))
-        output.println(s""","$beets"""")
+        for( q <- 0 to a._2(1)._2.length -1 ) {
+          output.print(s"${a._1._1},${a._1._2}")
+          a._2.map(b => output.print(s""","${fetch(b._2(q))}""""))
+          output.println(s""","$beets"""")
+        }
       }
       )
       output.close()
@@ -105,4 +105,6 @@ object RunMe {
       Demo.server.shutdown()
     }
   }
+
+  @inline final def fetch(v: Int): String = if(isData(v)) v.toString else ""
 }
