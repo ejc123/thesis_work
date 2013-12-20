@@ -61,22 +61,23 @@ object RunMe {
     var stopNanos = System.nanoTime()
     println(s"Load Geometry file took: ${(stopNanos - startNanos) / 1000000} ms")
 
-    import scala.util.Random
-    val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
+    // import scala.util.Random
+    // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
 
     try {
-     // val results = valid.flatMap {g =>
-     val results = tenPercent.flatMap {g =>
+     val results = valid.flatMap {g =>
+     // val results = tenPercent.flatMap {g =>
        dates(year).map {date =>
           {
             val lat = g.data.get.get(coords(feature_year)("LAT")).getDoubleValue
             val lon = g.data.get.get(coords(feature_year)("LON")).getDoubleValue
+println(s"ID: ${lat} $lon")
             val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
             val polygon = Polygon(reproj.geom, 0)
             val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean")
             tileSet.zonalEnumerate(polygon).run match {
               case Complete(result, _) => (lat, lon, date, result)
-              case _ => (lat, lon, date, List.empty)
+              case _ => (lat, lon, date, Array.empty)
             }
           }
          }
