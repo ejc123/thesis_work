@@ -76,7 +76,7 @@ object RunMe {
             val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean")
             tileSet.zonalEnumerate(polygon).run match {
               case Complete(result, _) => (lat, lon, date, result)
-              case _ => (lat, lon, date, List.empty)
+              case _ => (lat, lon, date, Array.empty)
             }
           }
          }
