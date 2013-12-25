@@ -2,6 +2,7 @@ package net.christeson.geotrellis.template
 
 import geotrellis._
 import geotrellis.feature.Polygon
+import geotrellis.feature.op.geometry.GetCentroid
 import geotrellis.process.{Complete, Server}
 import geotrellis.source.RasterSource
 
@@ -19,7 +20,7 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val prior = toggle(descrYes = "Use prior year for negative sample", descrNo = "Use next year for negative sample")
   codependent(negative,prior)
   validate (year) { a =>
-    if(a <=2011 && a >= 2007) Right(Unit)
+    if(a <=2011 && a >= 2007)  Right(Unit)
     else Left("year must be between 2007 and 2011 inclusive")
   }
 
@@ -49,7 +50,7 @@ object RunMe {
       case _ => beets
     }
 
-    val featurePath = s"file:///home/ejc/geotrellis/data/${feature_year}_field_boundary.geojson"
+    val featurePath = s"file:///home/ejc/geotrellis/data/${feature_year}_field_boundary_cropped.geojson"
     import scalax.io.Resource
 
     implicit val codec = scalax.io.Codec.UTF8
@@ -69,14 +70,15 @@ object RunMe {
      val results = tenPercent.flatMap {g =>
        dates(year).map {date =>
           {
-            val lat = g.data.get.get(coords(feature_year)("LAT")).getDoubleValue
-            val lon = g.data.get.get(coords(feature_year)("LON")).getDoubleValue
-            val reproj = Transformer.transform(g, Projections.LongLat, Projections.RRVUTM)
-            val polygon = Polygon(reproj.geom, 0)
+            val polygon = Polygon(g.geom,0)
+            val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
             val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean")
-            tileSet.zonalEnumerate(polygon).run match {
-              case Complete(result, _) => (lat, lon, date, result)
-              case _ => (lat, lon, date, Array.empty)
+            Demo.server.run(tileSet.zonalMean(polygon)) match {
+              case Complete(result, _) => isNoData(result) match {
+                  case true  => (coords.y, coords.x,None)
+                  case false => (coords.y, coords.x,Some(math.round(result)))
+              }
+              case _ => (coords.y, coords.x, None)
             }
           }
          }
