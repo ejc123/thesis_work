@@ -73,12 +73,9 @@ object RunMe {
             val polygon = Polygon(g.geom,0)
             val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
             val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean")
-            Demo.server.run(tileSet.zonalMean(polygon)) match {
-              case Complete(result, _) => isNoData(result) match {
-                  case true  => (coords.y, coords.x,None)
-                  case false => (coords.y, coords.x,Some(math.round(result)))
-              }
-              case _ => (coords.y, coords.x, None)
+            tileSet.zonalEnumerate(polygon).run match {
+              case Complete(result, _) =>  (coords.y, coords.x, date, result)
+              case _ => (coords.y, coords.x, date, Array.empty)
             }
           }
          }
