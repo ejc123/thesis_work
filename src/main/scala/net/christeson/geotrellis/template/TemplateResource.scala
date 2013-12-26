@@ -2,12 +2,12 @@ package net.christeson.geotrellis.template
 
 import geotrellis._
 import geotrellis.feature.Polygon
+import geotrellis.feature.op.geometry.GetCentroid
 import geotrellis.process.{Complete, Server}
 import geotrellis.source.RasterSource
 
 import org.rogach.scallop._
 import Settings._
-import geotrellis.feature.op.geometry.GetCentroid
 
 object Demo {
   val server = Server("demo", "src/main/resources/catalog.json")
@@ -18,10 +18,9 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val store = opt[String](default = Some("tiled"), required = true)
   val negative = opt[Boolean]()
   val prior = toggle(descrYes = "Use prior year for negative sample", descrNo = "Use next year for negative sample")
-  val test =
   codependent(negative,prior)
   validate (year) { a =>
-    if(a <=2011 && a >= 2007) Right(Unit)
+    if(a <=2011 && a >= 2007)  Right(Unit)
     else Left("year must be between 2007 and 2011 inclusive")
   }
 
@@ -51,7 +50,7 @@ object RunMe {
       case _ => beets
     }
 
-    val featurePath = s"file:///home/ejc/geotrellis/data/${feature_year}_field_boundary.geojson"
+    val featurePath = s"file:///home/ejc/geotrellis/data/${feature_year}_field_boundary_cropped.geojson"
     import scalax.io.Resource
 
     implicit val codec = scalax.io.Codec.UTF8
@@ -72,11 +71,10 @@ object RunMe {
        dates(year).map {date =>
           {
             val polygon = Polygon(g.geom,0)
-            val centroidOp = GetCentroid(polygon)
-            val coords = Demo.server.get(centroidOp).geom.getCoordinate
+            val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
             val tileSet = RasterSource(conf.store(),s"ltm5_${year}_${date}_clean")
             tileSet.zonalEnumerate(polygon).run match {
-              case Complete(result, _) => (coords.y,coords.x, date, result)
+              case Complete(result, _) =>  (coords.y, coords.x, date, result)
               case _ => (coords.y, coords.x, date, Array.empty)
             }
           }
@@ -89,7 +87,6 @@ object RunMe {
       val filtered = results.groupBy {
         case (a, b, _, _) => (a, b)
       }.mapValues(b => b.map(c => c._3 -> c._4).toList.sortBy(_._1)).toList.sortBy(_._1._1).seq
-     startNanos = System.nanoTime()
       filtered.map(a => {
         for( q <- 0 to a._2(1)._2.length -1 ) {
           if(a._2.foldLeft(false)((a,b) => isData(b._2(q)) || a)) {
@@ -100,8 +97,6 @@ object RunMe {
         }
       }
       )
-     stopNanos = System.nanoTime()
-     println(s"Printing took: ${(stopNanos - startNanos) / 1000000} ms")
       output.close()
       println(s"Results length ${results.length}")
     }
