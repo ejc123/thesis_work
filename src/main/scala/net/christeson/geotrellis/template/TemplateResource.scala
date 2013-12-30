@@ -97,12 +97,15 @@ object RunMe {
       output.println(heading(sat)(year))
       val filtered = results.groupBy {
         case (a, b, _, _) => (a, b)
-      }.mapValues(b => b.map(c => c._3 -> c._4).toList.sortBy(_._1)).toList.sortBy(_._1._1).seq
+      }.mapValues(b => b.map(c => c._3 -> c._4).groupBy {
+        case(a,_) => a
+
+      }.mapValues(b => b.map(c => {for (j <- 0 to c._2.length) ).toList.sortBy(_._1))).toList.sortBy(_._1._1).seq
       filtered.map(a => {
         for( q <- 0 to a._2(1)._2.length -1 ) {
           if(a._2.foldLeft(false)((a,b) => isData(b._2(q)) || a)) {
             output.print(s"${a._1._1},${a._1._2}")
-            a._2.map(b => output.print(s""","${fetch(b._2(q))}""""))
+            a._2.map(b => output.print(s""",${fetch(b._2(q))}"""))
             output.println(s""","$beets"""")
           }
         }
