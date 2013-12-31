@@ -40,7 +40,7 @@ object RunMe {
         // val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
      val results = geoms.map {g => {
             val polygon = Polygon(g.geom,0)
-            val ind = g.data.get.get("IND").getTextValue
+            val ind = g.data.get.get("IND")
             val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
           (ind,coords)
          }
