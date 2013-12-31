@@ -77,11 +77,10 @@ object RunMe {
         val geoJson = resource.mkString
         val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
         val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
-        // valid.tasksupport = new ForkJoinTaskSupport( new scala.concurrent.forkjoin.ForkJoinPool(4))
-        // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
-     println(s"Processing: $year/$feature_year")
-     val results = valid.flatMap {g =>
-     // val results = tenPercent.flatMap {g =>
+        valid.tasksupport = new ForkJoinTaskSupport( new scala.concurrent.forkjoin.ForkJoinPool(4))
+        val tenPercent = valid.take(10) //Random.shuffle(valid.toList).take((valid.length * .40).toInt)
+     // val results = valid.flatMap {g =>
+     val results = tenPercent.flatMap {g =>
        dates(sat)(year).map {date =>
           {
             val polygon = Polygon(g.geom,0)
@@ -99,16 +98,16 @@ object RunMe {
       val output = new PrintWriter(s"$outputPath/ltm${sat}_$year$beetfile.txt")
       output.println(s"LENGTH,${heading(sat)(year)}")
       val filtered = results.groupBy {
-        case (a, b, _) => (a, b)
-      }.seq.mapValues(b => b.map(c => c._3).toList).toList.sortBy(_._1._1.x)
+        case (a, _, _) => a
+      }.seq.mapValues(b => b.map(c => (c._2 -> c._3)).seq).toList.sortBy(_._1.x)
       filtered.map(a => {
-        for( q <- 0 to a._2(1).length -1 ) {
-          if(a._2.foldLeft(false)((a,b) => isData(b(q)) || a)) {
+        for( q <- 0 to a._2.foldLeft(0)((a,b) => max(a,b._2.length)) - 1 ) {
+//          if(a._2.foldLeft(false)((a,b) => isData(b(q)) || a)) {
             output.print(s"${a._2.length},")
-            output.print(s"${a._1._1.x},${a._1._1.y}")
-            a._2.map(b => output.print(s""",${fetch(b(q))}"""))
+            output.print(s"${a._1.x},${a._1.y}")
+            a._2.map(b => output.print(s""",${fetch(b._2(q))}"""))
             output.println(s""","$beets"""")
-          }
+//          }
         }
       }
       )
@@ -122,4 +121,5 @@ object RunMe {
   }
 
   @inline final def fetch(v: Int): String = if(isData(v)) v.toString else ""
+  @inline final def max(a: Int, b: Int): Int = if (a > b) a else b
 }
