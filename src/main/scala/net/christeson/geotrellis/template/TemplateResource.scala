@@ -105,8 +105,8 @@ object RunMe {
       filtered.map(mess => {
         val datemap = mess._2
         datemap.values.foreach( v =>
-        for( cell <- 0 to datemap.values.foldLeft(0)((accum,array) => max(accum)(array.length) )) {
-          for ( which <- 0 to v.length) {
+        for( cell <- 0 to datemap.values.foldLeft(0)((accum,array) => max(accum)(array.length) - 1)) {
+          for ( which <- 0 to v.length - 1) {
             output.print(s"${datemap.size},")
             output.print(s"${mess._1.x},${mess._1.y}")
             dates(sat)(year).map(date => output.print(s""",${fetch(datemap(date)(which)(cell))}"""))
