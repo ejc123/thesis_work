@@ -111,7 +111,7 @@ object RunMe {
             output.print(s"${values.head.length},")
             output.print(s"${datemap.size},")
             output.print(s"${mess._1.x},${mess._1.y}")
-            dates(sat)(year).map(date => output.print(s""",${fetch(datemap(date)(which)(cell))}"""))
+            dates(sat)(year).seq.map(date => output.print(s""",${fetch(datemap(date)(which)(cell))}"""))
             output.println(s""","$beets"""")
             }
           }
