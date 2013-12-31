@@ -5,7 +5,7 @@
    "store": "tiled",
    "params": {
      "type": "fs",
-     "path": "/home/christes/geotrellis/data/tiled",
+     "path": "/home/ejc/geotrellis/data/tiled",
      "cacheAll": "no"
    }
   }
