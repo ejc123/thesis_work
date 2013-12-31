@@ -105,7 +105,7 @@ object RunMe {
 //          if(a._2.foldLeft(false)((a,b) => isData(b(q)) || a)) {
             output.print(s"${a._2.length},")
             output.print(s"${a._1.x},${a._1.y}")
-            a._2.map(c => output.print(s""",${fetch(c(q))}"""))
+            a._2.map(c => c.values.foreach(d => output.print(s""",${fetch(d(q))}""")))
             output.println(s""","$beets"""")
 //          }
         }
