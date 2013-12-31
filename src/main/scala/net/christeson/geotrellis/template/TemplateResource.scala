@@ -78,9 +78,9 @@ object RunMe {
         val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
         val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
         valid.tasksupport = new ForkJoinTaskSupport( new scala.concurrent.forkjoin.ForkJoinPool(4))
-        val tenPercent = valid.take(10) //Random.shuffle(valid.toList).take((valid.length * .40).toInt)
-     // val results = valid.flatMap {g =>
-     val results = tenPercent.flatMap {g =>
+        // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .40).toInt)
+     val results = valid.flatMap {g =>
+     // val results = tenPercent.flatMap {g =>
        dates(sat)(year).map {date =>
           {
             val polygon = Polygon(g.geom,0)
