@@ -19,7 +19,7 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val store = opt[String](default = Some("tiled"), required = true)
   val sat = opt[Int](required = true, default=Some(5))
   val prior = toggle(descrYes = "Use prior year for negative sample", descrNo = "Use next year for negative sample")
-  val outputPath = opt[String](default = Some("/home/ejc"))
+  val outputPath = opt[String](default = Some("/home/christes"))
 
   validate (sat) { a =>
     if(a == 5 || a == 7) Right(Unit)
@@ -71,14 +71,15 @@ object RunMe {
           case true => beets
           case false => s"$beets$feature_year"
         }
-        val featurePath = s"file:///home/ejc/geotrellis/data/${feature_year}_field_boundary_cropped.geojson"
+        val featurePath = s"file:///home/christes/geotrellis/data/${feature_year}_field_boundary_cropped.geojson"
         val resource = Resource.fromURL(featurePath).chars
         val geoJson = resource.mkString
         val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
         val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
-        val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
-     // val results = valid.flatMap {g =>
-     val results = tenPercent.flatMap {g =>
+        // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
+     println(s"Processing: $year/$feature_year")
+     val results = valid.flatMap {g =>
+     // val results = tenPercent.flatMap {g =>
        dates(sat)(year).map {date =>
           {
             val polygon = Polygon(g.geom,0)
@@ -102,7 +103,7 @@ object RunMe {
         for( q <- 0 to a._2(1)._2.length -1 ) {
           if(a._2.foldLeft(false)((a,b) => isData(b._2(q)) || a)) {
             output.print(s"${a._1._1},${a._1._2}")
-            a._2.map(b => output.print(s""","${fetch(b._2(q))}""""))
+            a._2.map(b => output.print(s""",${fetch(b._2(q))}"""))
             output.println(s""","$beets"""")
           }
         }
