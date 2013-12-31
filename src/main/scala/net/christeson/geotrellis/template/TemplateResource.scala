@@ -97,6 +97,7 @@ object RunMe {
       import java.io.PrintWriter
       val output = new PrintWriter(s"$outputPath/ltm${sat}_$year$beetfile.txt")
       output.println(s"LENGTH,${heading(sat)(year)}")
+      val dateArray = dates(sat)(year).seq
       val filtered = results.groupBy {
         case (coord, _, _) => coord
       }.seq.mapValues(values => values.groupBy {
@@ -105,13 +106,11 @@ object RunMe {
       filtered.map(mess => {
         val datemap = mess._2
         val values = datemap.values
+        // The limit on these fors should be the same for all the arrays
         for( cell <- 0 to values.head.foldLeft(0)((accum,array) => max(accum)(array.length)) - 1) {
-          for ( which <- 0 to values.foldLeft(0)((accum,array) => max(accum)(array.length)) -1) {
-            output.print(s"${cell},")
-            output.print(s"${values.head.length},")
-            output.print(s"${datemap.size},")
+          for ( which <- 0 to values.foldLeft(0)((accum,array) => max(accum)(array.length)) - 1) {
             output.print(s"${mess._1.x},${mess._1.y}")
-            dates(sat)(year).seq.map(date => output.print(s""",${fetch(datemap(date)(which)(cell))}"""))
+            dateArray.map(date => output.print(s""",${fetch(datemap(date)(which)(cell))}"""))
             output.println(s""","$beets"""")
             }
           }
