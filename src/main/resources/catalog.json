@@ -5,23 +5,7 @@
    "store": "tiled",
    "params": {
      "type": "fs",
-     "path": "/home/ejc/geotrellis/data/tiled",
-     "cacheAll": "no"
-   }
-  },
-  {
-   "store": "tiled64",
-   "params": {
-     "type": "fs",
-     "path": "/home/ejc/geotrellis/data/tiled64",
-     "cacheAll": "no"
-   }
-  },
-  {
-   "store": "tiled32",
-   "params": {
-     "type": "fs",
-     "path": "/home/ejc/geotrellis/data/tiled32",
+     "path": "/home/christes/geotrellis/data/tiled",
      "cacheAll": "no"
    }
   }
