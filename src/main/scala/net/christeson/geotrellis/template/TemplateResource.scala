@@ -8,6 +8,7 @@ import geotrellis.source.RasterSource
 
 import org.rogach.scallop._
 import Settings._
+import scala.collection.parallel.ForkJoinTaskSupport
 
 object Demo {
   val server = Server("demo", "src/main/resources/catalog.json")
@@ -76,6 +77,7 @@ object RunMe {
         val geoJson = resource.mkString
         val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
         val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
+        // valid.tasksupport = new ForkJoinTaskSupport( new scala.concurrent.forkjoin.ForkJoinPool(4))
         // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
      println(s"Processing: $year/$feature_year")
      val results = valid.flatMap {g =>
@@ -86,8 +88,8 @@ object RunMe {
             val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
             val tileSet = RasterSource(conf.store(),s"ltm${sat}_${year}_${date}_clean")
             tileSet.zonalEnumerate(polygon).run match {
-              case Complete(result, _) =>  (coords.y, coords.x, date, result)
-              case _ => (coords.y, coords.x, date, Array.empty)
+              case Complete(result, _) =>  (coords, date, result)
+              case _ => (coords, date, Array.empty)
             }
           }
          }
@@ -95,15 +97,16 @@ object RunMe {
 
       import java.io.PrintWriter
       val output = new PrintWriter(s"$outputPath/ltm${sat}_$year$beetfile.txt")
-      output.println(heading(sat)(year))
+      output.println(s"LENGTH,${heading(sat)(year)}")
       val filtered = results.groupBy {
-        case (a, b, _, _) => (a, b)
-      }.mapValues(b => b.map(c => c._3 -> c._4).toList.sortBy(_._1)).toList.sortBy(_._1._1).seq
+        case (a, b, _) => (a, b)
+      }.seq.mapValues(b => b.map(c => c._3).toList).toList.sortBy(_._1._1.x)
       filtered.map(a => {
-        for( q <- 0 to a._2(1)._2.length -1 ) {
-          if(a._2.foldLeft(false)((a,b) => isData(b._2(q)) || a)) {
-            output.print(s"${a._1._1},${a._1._2}")
-            a._2.map(b => output.print(s""",${fetch(b._2(q))}"""))
+        for( q <- 0 to a._2(1).length -1 ) {
+          if(a._2.foldLeft(false)((a,b) => isData(b(q)) || a)) {
+            output.print(s"${a._2.length},")
+            output.print(s"${a._1._1.x},${a._1._1.y}")
+            a._2.map(b => output.print(s""",${fetch(b(q))}"""))
             output.println(s""","$beets"""")
           }
         }
