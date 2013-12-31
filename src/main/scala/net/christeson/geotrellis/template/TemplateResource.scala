@@ -98,19 +98,24 @@ object RunMe {
       val output = new PrintWriter(s"$outputPath/ltm${sat}_$year$beetfile.txt")
       output.println(s"LENGTH,${heading(sat)(year)}")
       val filtered = results.groupBy {
-        case (a, _, _) => a
-      }.seq.mapValues(b => b.map(c => (c._2 -> c._3)).seq).toList.sortBy(_._1.x)
+        case (coord, _, _) => coord
+      }.seq.mapValues(values => values.groupBy {
+        case (_, date, _ ) => date
+      }.mapValues(values => values.map(_._3).seq.toArray).seq).toList.sortBy(_._1.x)
       filtered.map(a => {
-        for( q <- 0 to a._2.foldLeft(0)((a,b) => max(a,b._2.length)) - 1 ) {
-//          if(a._2.foldLeft(false)((a,b) => isData(b(q)) || a)) {
-            output.print(s"${a._2.length},")
+        a._2.values.foreach( v =>
+        for( q <- 0 to a._2.values.foldLeft(0)((a,b) => max(a)(b.length) )) {
+          v.foreach( w => {
+            output.print(s"${a._2.size},")
             output.print(s"${a._1.x},${a._1.y}")
-            a._2.map(b => output.print(s""",${fetch(b._2(q))}"""))
+            a._2.keys.map(b => output.print(s""",${fetch(a._2(b)(0)(q))}"""))
             output.println(s""","$beets"""")
-//          }
+            }
+            )
         }
-      }
-      )
+        )
+        }
+        )
       output.close()
       println(s"Results length ${results.length}")
       }
@@ -121,5 +126,5 @@ object RunMe {
   }
 
   @inline final def fetch(v: Int): String = if(isData(v)) v.toString else ""
-  @inline final def max(a: Int, b: Int): Int = if (a > b) a else b
+  @inline final def max(a: Int)(b: Int): Int = if (a > b) a else b
 }
