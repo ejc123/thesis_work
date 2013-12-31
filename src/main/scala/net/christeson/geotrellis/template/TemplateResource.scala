@@ -94,41 +94,24 @@ object RunMe {
          }
       }
 
-//      import java.io.PrintWriter
-//      val output = new PrintWriter(s"$outputPath/ltm${sat}_$year$beetfile.txt")
-//      output.println(s"LENGTH,${heading(sat)(year)}")
+      import java.io.PrintWriter
+      val output = new PrintWriter(s"$outputPath/ltm${sat}_$year$beetfile.txt")
+      output.println(s"LENGTH,${heading(sat)(year)}")
       val filtered = results.groupBy {
-        case (a, b, _) => (a, b)
-      }.seq.mapValues(b => b.map(c => c._3).toList).toList.sortBy(_._1._1.x)
-/*
+        case (a, _, _) => a
+      }.seq.mapValues(b => b.map(c => Map(c._2 -> c._3)).seq).toList.sortBy(_._1.x)
       filtered.map(a => {
-        for( q <- 0 to a._2.head.length -1 ) {
-          if(a._2.foldLeft(false)((a,b) => isData(b(q)) || a)) {
+        for( q <- 0 to a._2.head.values.foldLeft(0)((a,b) => max(a,b.length)) - 1 ) {
+//          if(a._2.foldLeft(false)((a,b) => isData(b(q)) || a)) {
             output.print(s"${a._2.length},")
-            output.print(s"${a._1._1.x},${a._1._1.y}")
-            a._2.map(b => output.print(s""",${fetch(b(q))}"""))
+            output.print(s"${a._1.x},${a._1.y}")
+            a._2.map(c => output.print(s""",${fetch(c(q))}"""))
             output.println(s""","$beets"""")
-          }
+//          }
         }
       }
       )
-*/
-println(s"Filtered.length: ${filtered.length}");
-filtered.map(a => {
-println(s"a: ${a._2.length}, ${a._2.head.length}")
-/*
-        for( q <- 0 to a._2.head.length -1 ) {
-          if(a._2.foldLeft(false)((a,b) => isData(b(q)) || a)) {
-            output.print(s"${a._2.length},")
-            output.print(s"${a._1._1.x},${a._1._1.y}")
-            a._2.map(b => output.print(s""",${fetch(b(q))}"""))
-            output.println(s""","$beets"""")
-          }
-        }
-*/
-})
-
-//      output.close()
+      output.close()
       println(s"Results length ${results.length}")
       }
     }
@@ -138,4 +121,5 @@ println(s"a: ${a._2.length}, ${a._2.head.length}")
   }
 
   @inline final def fetch(v: Int): String = if(isData(v)) v.toString else ""
+  @inline final def max(a: Int, b: Int): Int = (a > b) ? a : b
 }
