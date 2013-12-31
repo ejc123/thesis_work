@@ -78,9 +78,9 @@ object RunMe {
         val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
         val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
         valid.tasksupport = new ForkJoinTaskSupport( new scala.concurrent.forkjoin.ForkJoinPool(4))
-        // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt)
-     val results = valid.flatMap {g =>
-     // val results = tenPercent.flatMap {g =>
+        val tenPercent = valid.take(10) //Random.shuffle(valid.toList).take((valid.length * .40).toInt)
+     // val results = valid.flatMap {g =>
+     val results = tenPercent.flatMap {g =>
        dates(sat)(year).map {date =>
           {
             val polygon = Polygon(g.geom,0)
@@ -94,14 +94,15 @@ object RunMe {
          }
       }
 
-      import java.io.PrintWriter
-      val output = new PrintWriter(s"$outputPath/ltm${sat}_$year$beetfile.txt")
-      output.println(s"LENGTH,${heading(sat)(year)}")
+//      import java.io.PrintWriter
+//      val output = new PrintWriter(s"$outputPath/ltm${sat}_$year$beetfile.txt")
+//      output.println(s"LENGTH,${heading(sat)(year)}")
       val filtered = results.groupBy {
         case (a, b, _) => (a, b)
       }.seq.mapValues(b => b.map(c => c._3).toList).toList.sortBy(_._1._1.x)
+/*
       filtered.map(a => {
-        for( q <- 0 to a._2(1).length -1 ) {
+        for( q <- 0 to a._2.head.length -1 ) {
           if(a._2.foldLeft(false)((a,b) => isData(b(q)) || a)) {
             output.print(s"${a._2.length},")
             output.print(s"${a._1._1.x},${a._1._1.y}")
@@ -111,7 +112,23 @@ object RunMe {
         }
       }
       )
-      output.close()
+*/
+println(s"Filtered.length: ${filtered.length}");
+filtered.map(a => {
+println(s"a: ${a._2.length}, ${a._2.head.length}")
+/*
+        for( q <- 0 to a._2.head.length -1 ) {
+          if(a._2.foldLeft(false)((a,b) => isData(b(q)) || a)) {
+            output.print(s"${a._2.length},")
+            output.print(s"${a._1._1.x},${a._1._1.y}")
+            a._2.map(b => output.print(s""",${fetch(b(q))}"""))
+            output.println(s""","$beets"""")
+          }
+        }
+*/
+})
+
+//      output.close()
       println(s"Results length ${results.length}")
       }
     }
