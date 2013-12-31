@@ -121,5 +121,5 @@ object RunMe {
   }
 
   @inline final def fetch(v: Int): String = if(isData(v)) v.toString else ""
-  @inline final def max(a: Int, b: Int): Int = (a > b) ? a : b
+  @inline final def max(a: Int, b: Int): Int = if (a > b) a else b
 }
