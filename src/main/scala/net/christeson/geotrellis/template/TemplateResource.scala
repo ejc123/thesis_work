@@ -114,8 +114,8 @@ object RunMe {
             dates(sat)(year).map(date => output.print(s""",${fetch(datemap(date)(which)(cell))}"""))
             output.println(s""","$beets"""")
             }
-        )
-        }
+          }
+      }
         )
       output.close()
       println(s"Results length ${results.length}")
