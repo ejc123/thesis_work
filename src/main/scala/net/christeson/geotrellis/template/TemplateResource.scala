@@ -102,16 +102,16 @@ object RunMe {
       }.seq.mapValues(values => values.groupBy {
         case (_, date, _ ) => date
       }.mapValues(values => values.map(_._3).seq.toArray).seq).toList.sortBy(_._1.x)
-      filtered.map(a => {
-        a._2.values.foreach( v =>
-        for( q <- 0 to a._2.values.foldLeft(0)((a,b) => max(a)(b.length) )) {
-          v.foreach( w => {
-            output.print(s"${a._2.size},")
-            output.print(s"${a._1.x},${a._1.y}")
-            a._2.keys.toList.sortBy(_).map(b => output.print(s""",${fetch(a._2(b)(0)(q))}"""))
+      filtered.map(mess => {
+        val datemap = mess._2
+        datemap.values.foreach( v =>
+        for( cell <- 0 to datemap.values.foldLeft(0)((accum,array) => max(accum)(array.length) )) {
+          for ( which <- v.length) {
+            output.print(s"${datemap.size},")
+            output.print(s"${mess._1.x},${mess._1.y}")
+            dates(sat)(year).map(date => output.print(s""",${fetch(datemap(date)(which)(cell))}"""))
             output.println(s""","$beets"""")
             }
-            )
         }
         )
         }
