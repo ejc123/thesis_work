@@ -108,7 +108,7 @@ object RunMe {
           v.foreach( w => {
             output.print(s"${a._2.size},")
             output.print(s"${a._1.x},${a._1.y}")
-            a._2.keys.map(b => output.print(s""",${fetch(a._2(b)(0)(q))}"""))
+            a._2.keys.toList.sortBy(_).map(b => output.print(s""",${fetch(a._2(b)(0)(q))}"""))
             output.println(s""","$beets"""")
             }
             )
