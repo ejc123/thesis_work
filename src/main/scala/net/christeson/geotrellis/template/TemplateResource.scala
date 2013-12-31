@@ -104,11 +104,11 @@ object RunMe {
       }.mapValues(values => values.map(_._3).seq.toArray).seq).toList.sortBy(_._1.x)
       filtered.map(mess => {
         val datemap = mess._2
-        val values = datemap.values.toList
-        for( cell <- 0 to datemap.values.foldLeft(0)((accum,array) => max(accum)(array.length) - 1)) {
-          for ( which <- 0 to values.length - 1) {
+        val values = datemap.values
+        for( cell <- 0 to values.head.foldLeft(0)((accum,array) => max(accum)(array.length)) - 1) {
+          for ( which <- 0 to values.foldLeft(0)((accum,array) => max(accum)(array.length)) -1) {
             output.print(s"${cell},")
-            output.print(s"${values.length},")
+            output.print(s"${values.head.length},")
             output.print(s"${datemap.size},")
             output.print(s"${mess._1.x},${mess._1.y}")
             dates(sat)(year).map(date => output.print(s""",${fetch(datemap(date)(which)(cell))}"""))
