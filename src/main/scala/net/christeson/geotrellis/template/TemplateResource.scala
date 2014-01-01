@@ -33,8 +33,8 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
       sa match {
         case 5 => if (st <= 2011 && st >= 2007) Right(Unit)
         else Left("year must be between 2007 and 2011 inclusive for landsat5")
-        case 7 => if (st <= 2013 && st >= 2008) Right(Unit)
-        else Left("year must be between 2008 and 2013 inclusive for landsat7")
+        case 7 => if (st <= 2013 && st >= 2007) Right(Unit)
+        else Left("year must be between 2007 and 2013 inclusive for landsat7")
       }
   }
 }
@@ -99,7 +99,7 @@ object RunMe {
 
         import java.io.PrintWriter
         val output = new PrintWriter(s"$outputPath/ltm${sat}_$year$beetfile.txt")
-        output.println(s"LENGTH,${heading(sat)(year)}")
+        output.println(s"${heading(sat)(year)}")
         val dateArray = dates(sat)(year).seq
         val filtered = results.groupBy {
           case (coord, _, _) => coord
