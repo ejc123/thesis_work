@@ -89,9 +89,12 @@ object RunMe {
                 val polygon = Polygon(g.geom, 0)
                 val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
                 val tileSet = RasterSource(conf.store(), s"ltm${sat}_${year}_${date}_clean")
-                tileSet.zonalEnumerate(polygon).run match {
-                  case Complete(result, _) => (coords, date, result)
-                  case _ => (coords, date, Array.empty)
+                tileSet.zonalMean(polygon).run match {
+                  case Complete(result, _) => isNoData(result) match {
+                    case true => (coords, date, None)
+                    case false => (coords, date, Some(math.round(result)))
+                  }
+                  case _ => (coords, date, None)
                 }
               }
             }
@@ -111,11 +114,9 @@ object RunMe {
           val values = datemap.values
           // The limit on these fors should be the same for all the arrays
           for (which <- 0 to values.head.length - 1) {
-            for (cell <- 0 to values.head(which).length - 1) {
               output.print(s"${mess._1.x},${mess._1.y}")
-              dateArray.map(date => output.print( s""",${fetch(datemap(date)(which)(cell))}"""))
+              dateArray.map(date => output.print( s""",${datemap(date)(which).getOrElse("")}"""))
               output.println( s""","$beets"""")
-            }
           }
         }
         )
@@ -127,8 +128,6 @@ object RunMe {
       Demo.server.shutdown()
     }
   }
-
-  @inline final def fetch(v: Int): String = if (isData(v)) v.toString else ""
 
   @inline final def max(a: Int)(b: Int): Int = if (a > b) a else b
 }
