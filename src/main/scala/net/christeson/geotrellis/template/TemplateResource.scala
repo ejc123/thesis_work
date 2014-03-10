@@ -74,21 +74,22 @@ object RunMe {
           case true => beets
           case false => s"$beets$feature_year"
         }
-        val featurePath = s"file:///home/ejc/geotrellis/data/${feature_year}_field_boundary_cropped.geojson"
+        val featurePath = s"file:///mnt/data/${feature_year}_field_boundary_cropped.geojson"
         val resource = Resource.fromURL(featurePath).chars
         val geoJson = resource.mkString
         val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
         val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
         valid.tasksupport = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(4))
         // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .40).toInt)
-        val results = valid.flatMap {
-          g =>
-          // val results = tenPercent.flatMap {g =>
-            dates(sat)(year).map {
-              date => {
+        // val results = valid.flatMap { g =>
+           val results = tenPercent.flatMap {g =>
+          //  dates(sat)(year).map {
+          //    date => {
+             months.map{
+                month => {
                 val polygon = Polygon(g.geom, 0)
                 val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
-                val tileSet = RasterSource(conf.store(), s"ltm${sat}_${year}_${date}_clean")
+                val tileSet = RasterSource(conf.store(), s"${month}${year}_NDVI_TOA")
                 tileSet.zonalEnumerate(polygon).run match {
                   case Complete(result, _) => (coords, date, result)
                   case _ => (coords, date, Array.empty)
@@ -98,7 +99,7 @@ object RunMe {
         }
 
         import java.io.PrintWriter
-        val output = new PrintWriter(s"$outputPath/ltm${sat}_$year$beetfile.txt")
+        val output = new PrintWriter(s"$outputPath/$year$beetfile.txt")
         output.println(s"${heading(sat)(year)}")
         val dateArray = dates(sat)(year).seq
         val filtered = results.groupBy {
