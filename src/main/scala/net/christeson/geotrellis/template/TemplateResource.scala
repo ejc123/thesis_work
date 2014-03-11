@@ -66,13 +66,13 @@ object RunMe {
           case a => year to a
         }
       } yield {
-        val beets = feature_year == year match {
-          case true => "beets"
-          case false => "nonbeets"
+        val positive = feature_year == year match {
+          case true => "positive"
+          case false => "negative"
         }
-        val beetfile = feature_year == year match {
-          case true => beets
-          case false => s"$beets$feature_year"
+        val outfile = feature_year == year match {
+          case true => positive
+          case false => s"$positive$feature_year"
         }
         val featurePath = s"file:///mnt/data/${feature_year}_field_boundary_cropped.geojson"
         val resource = Resource.fromURL(featurePath).chars
@@ -80,7 +80,7 @@ object RunMe {
         val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
         val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
         valid.tasksupport = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(4))
-        val tenPercent = Random.shuffle(valid.toList).take((valid.length * .40).toInt)
+        val tenPercent = Random.shuffle(valid).take((valid.length * .40).toInt)
         // val results = valid.flatMap { g =>
            val results = tenPercent.flatMap {g =>
           //  dates(sat)(year).map {
@@ -99,9 +99,9 @@ object RunMe {
         }
 
         import java.io.PrintWriter
-        val output = new PrintWriter(s"$outputPath/$year$beetfile.txt")
+        val output = new PrintWriter(s"$outputPath/$year$outfile.txt")
         output.println(s"${heading(sat)(year)}")
-        val dateArray = dates(sat)(year).seq
+        val monthSeq = months.seq
         val filtered = results.groupBy {
           case (coord, _, _) => coord
         }.seq.mapValues(values => values.groupBy {
@@ -114,8 +114,8 @@ object RunMe {
           for (which <- 0 to values.head.length - 1) {
             for (cell <- 0 to values.head(which).length - 1) {
               output.print(s"${mess._1.x},${mess._1.y}")
-              dateArray.map(date => output.print( s""",${fetch(datemap(date)(which)(cell))}"""))
-              output.println( s""","$beets"""")
+              monthSeq.map(date => output.print( s""",${fetch(datemap(date)(which)(cell))}"""))
+              output.println( s""","$positive"""")
             }
           }
         }
