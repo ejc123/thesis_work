@@ -35,6 +35,7 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
         else Left("year must be between 2007 and 2011 inclusive for landsat5")
         case 7 => if (st <= 2013 && st >= 2007) Right(Unit)
         else Left("year must be between 2007 and 2013 inclusive for landsat7")
+        case _ => Right(Unit)
       }
   }
 }
