@@ -18,14 +18,14 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val start = opt[Int](required = true)
   val end = opt[Int](required = true)
   val store = opt[String](default = Some("tiled"), required = true)
-  val sat = opt[Int](required = true, default = Some(5))
+  val sat = opt[Int](required = true, default = Some(0))
   val prior = toggle(descrYes = "Use prior year for negative sample", descrNo = "Use next year for negative sample")
   val outputPath = opt[String](default = Some("/home/ejc"))
 
   validate(sat) {
     a =>
-      if (a == 5 || a == 7) Right(Unit)
-      else Left("sat must be either 5 or 7")
+      if (a == 0 || a == 5 || a == 7) Right(Unit)
+      else Left("sat must be either 0, 5 or 7")
   }
 
   validate(sat, start) {
