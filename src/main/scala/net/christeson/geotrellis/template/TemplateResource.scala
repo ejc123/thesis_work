@@ -92,7 +92,8 @@ object RunMe {
                 val polygon = Polygon(g.geom, 0)
                 val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
                 val tileSet = RasterSource(conf.store(), s"${month}${year}NDVI_TOA_UTM14.TIF")
-                tileSet.zonalEnumerate(polygon).run match {
+                val mask = RasterSource(s"${month}${year}ACCA_State_UTM14")
+                tileSet.localMask(mask,1,NODATA).zonalEnumerate(polygon).run match {
                   case Complete(result, _) => (coords, month, result)
                   case _ => (coords, month, Array.empty)
                 }
