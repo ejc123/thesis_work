@@ -81,7 +81,7 @@ object RunMe {
         val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
         val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
         valid.tasksupport = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(4))
-        // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .40).toInt).toParArray
+        // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt).toParArray
         val tenPercent = valid.take(100)
         // val results = valid.flatMap { g =>
            val results = tenPercent.flatMap {g =>
@@ -91,19 +91,22 @@ object RunMe {
                 month => {
                 val polygon = Polygon(g.geom, 0)
                 val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
-                val tileSet = RasterSource(conf.store(), s"${month}${year}_NDVI_TOA")
+                val tileSet = RasterSource(conf.store(), s"${month}${year}NDVI_TOA_UTM14.TIF")
                   /*
                   tileSet.rasterDefinition.run match {
                     case Result(value) => value.rasterExtent.extent)
                   }.
                   */
-                tileSet.zonalEnumerate(polygon).run match {
+                val mask = RasterSource(s"${month}${year}ACCA_State_UTM14")
+                tileSet.localMask(mask,1,NODATA).zonalEnumerate(polygon).run match {
                   case Complete(result, _) => (coords, month, result)
                   case _ => (coords, month, Array.empty)
                 }
               }
             }
         }
+
+println(s"results: ${results.length}")
 
         import java.io.PrintWriter
         val output = new PrintWriter(s"$outputPath/$year$outfile.txt")
