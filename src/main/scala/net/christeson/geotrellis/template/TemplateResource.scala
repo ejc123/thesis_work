@@ -84,23 +84,23 @@ object RunMe {
         // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt).toParArray
         val tenPercent = valid.take(100)
         // val results = valid.flatMap { g =>
-           val results = tenPercent.flatMap {g =>
+           val results = months.flatMap{
+            month => {
+              val tileSet = RasterSource(conf.store(), s"${month}${year}NDVI_TOA_UTM14.TIF")
+              val mask = RasterSource(s"${month}${year}ACCA_State_UTM14")
+              val foo = tileSet.localMask(mask,1,NODATA).run match {
+                case Complete(result,_) => RasterSource(result)
+              }
+             tenPercent.map {g =>
           //  dates(sat)(year).map {
           //    date => {
-             months.map{
-                month => {
                 val polygon = Polygon(g.geom, 0)
                 val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
-                val tileSet = RasterSource(conf.store(), s"${month}${year}NDVI_TOA_UTM14.TIF")
                   /*
                   tileSet.rasterDefinition.run match {
                     case Result(value) => value.rasterExtent.extent)
                   }.
                   */
-                val mask = RasterSource(s"${month}${year}ACCA_State_UTM14")
-                val foo = tileSet.localMask(mask,1,NODATA).run match {
-                  case Complete(result,_) => RasterSource(result)
-                }
                 foo.zonalEnumerate(polygon).run match {
                   case Complete(result, _) => (coords, month, result) // { println(s"History: $foo"); (coords, month, result)}
                   case _ => (coords, month, Array.empty[Int])
