@@ -11,13 +11,14 @@ object MyBuild extends Build {
 
       name := "geotrellis-example",
 
-      scalaVersion := "2.10.3",
+      scalaVersion := "2.10.4",
 
       scalacOptions ++= Seq("-deprecation",
         "-unchecked",
         "-optimize",
         "-Yclosure-elim",
         "-Yinline-warnings",
+        "-Ydead-code",
         "-language:implicitConversions",
         "-language:postfixOps",
         "-language:existentials",
@@ -31,7 +32,7 @@ object MyBuild extends Build {
 
       libraryDependencies ++= Seq(
         "org.scalatest"  % "scalatest_2.10"  % "2.0.M5b" % "test",
-        "org.scala-lang" % "scala-reflect" % "2.10.3",
+        "org.scala-lang" % "scala-reflect" % "2.10.4",
         "com.azavea.geotrellis" %% "geotrellis" % "1.0.0-SNAPSHOT" % "compile",
         "com.azavea.geotrellis" %% "geotrellis-geotools" % "1.0.0-SNAPSHOT" % "compile",
         "com.azavea.geotrellis" %% "geotrellis-macros" % "1.0.0-SNAPSHOT" % "compile",
