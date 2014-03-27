@@ -82,7 +82,7 @@ object RunMe {
         val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
         // valid.tasksupport = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(4))
         // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt).toParArray
-        val tenPercent = valid.take(100)
+        // val tenPercent = valid.take(100)
         // val results = valid.flatMap { g =>
            val results = months.flatMap{
             month => {
@@ -91,7 +91,7 @@ object RunMe {
               val foo = tileSet.localMask(mask,1,NODATA).run match {
                 case Complete(result,_) => RasterSource(result)
               }
-             tenPercent.map {g =>
+             valid.map {g =>
           //  dates(sat)(year).map {
           //    date => {
                 val polygon = Polygon(g.geom, 0)
