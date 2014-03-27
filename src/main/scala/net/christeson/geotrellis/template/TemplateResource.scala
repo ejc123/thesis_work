@@ -8,7 +8,7 @@ import geotrellis.source.RasterSource
 
 import org.rogach.scallop._
 import Settings._
-import scala.collection.parallel.ForkJoinTaskSupport
+import scala.collection.parallel.{mutable, ForkJoinTaskSupport}
 
 object Demo {
   val server = Server("demo", "src/main/resources/catalog.json")
@@ -99,8 +99,8 @@ object RunMe {
                   */
                 val mask = RasterSource(s"${month}${year}ACCA_State_UTM14")
                 tileSet.localMask(mask,1,NODATA).zonalEnumerate(polygon).run match {
-                  case Complete(result, _) => (coords, month, result)
-                  case _ => (coords, month, Array.empty)
+                  case Complete(result, foo) => { println(s"History: $foo"); (coords, month, result)}
+                  case _ => (coords, month, Array.empty[Int])
                 }
               }
             }
@@ -114,19 +114,17 @@ println(s"results: ${results.length}")
         val monthSeq = months.seq
         val filtered = results.groupBy {
           case (coord, _, _) => coord
-        }.seq.mapValues(values => values.groupBy {
-          case (_, date, _) => date
-        }.mapValues(values => values.map(_._3).seq.toArray).seq).toList.sortBy(_._1.x)
+        }.mapValues(values => values.foldLeft(mutable.ParMap.empty[String,Array[Int]])((a,b) => a += (b._2 -> b._3))).toList.sortBy(_._1.x)
         filtered.map(mess => {
           val datemap = mess._2
           val values = datemap.values
           // The limit on these fors should be the same for all the arrays
           for (which <- 0 to values.head.length - 1) {
-            for (cell <- 0 to values.head(which).length - 1) {
+          //  for (cell <- 0 to values.head(which).length - 1) {
               output.print(s"${mess._1.x},${mess._1.y}")
-              monthSeq.map(date => output.print( s""",${fetch(datemap(date)(which)(cell))}"""))
+              monthSeq.map(date => output.print( s""",${fetch(datemap(date)(which))}"""))
               output.println( s""","$positive"""")
-            }
+           // }
           }
         }
         )
@@ -141,5 +139,5 @@ println(s"results: ${results.length}")
 
   @inline final def fetch(v: Int): String = if (isData(v)) v.toString else ""
 
-  @inline final def max(a: Int)(b: Int): Int = if (a > b) a else b
+  // @inline final def max(a: Int)(b: Int): Int = if (a > b) a else b
 }
