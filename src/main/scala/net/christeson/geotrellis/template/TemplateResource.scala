@@ -102,7 +102,7 @@ object RunMe {
                   case Complete(result,_) => RasterSource(result)
                 }
                 foo.zonalEnumerate(polygon).run match {
-                  case Complete(result, foo) => { println(s"History: $foo"); (coords, month, result)}
+                  case Complete(result, _) => (coords, month, result) // { println(s"History: $foo"); (coords, month, result)}
                   case _ => (coords, month, Array.empty[Int])
                 }
               }
