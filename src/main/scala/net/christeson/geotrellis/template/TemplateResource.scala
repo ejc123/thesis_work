@@ -80,7 +80,7 @@ object RunMe {
         val geoJson = resource.mkString
         val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
         val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
-        valid.tasksupport = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(4))
+        // valid.tasksupport = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(4))
         // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt).toParArray
         val tenPercent = valid.take(100)
         // val results = valid.flatMap { g =>
@@ -99,7 +99,7 @@ object RunMe {
                   */
                 val mask = RasterSource(s"${month}${year}ACCA_State_UTM14")
                 tileSet.localMask(mask,1,NODATA).zonalEnumerate(polygon).run match {
-                  case Complete(result, foo) => { println(s"History: $foo"); (coords, month, result)}
+                  case Complete(result, _) => (coords, month, result) // { println(s"History: $foo"); (coords, month, result)}
                   case _ => (coords, month, Array.empty[Int])
                 }
               }
