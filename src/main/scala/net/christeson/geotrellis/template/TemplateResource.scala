@@ -86,7 +86,7 @@ object RunMe {
         // val results = valid.flatMap { g =>
            val results = months.flatMap{
             month => {
-              val tileSet = RasterSource(store, s"${month}${year}NDVI_TOA_UTM14.TIF")
+              val tileSet = RasterSource(store, s"${month}${year}NDVI_TOA_UTM14")
               val mask = RasterSource(store, s"${month}${year}ACCA_State_UTM14")
               val foo = tileSet.localMask(mask,1,NODATA).run match {
                 case Complete(result,_) => RasterSource(result)
