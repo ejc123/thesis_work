@@ -8,6 +8,14 @@
      "path": "/mnt/data/tiled",
      "cacheAll": "no"
    }
+  },
+  {
+   "store": "notile",
+   "params": {
+     "type": "fs",
+     "path": "/mnt/data/notile",
+     "cacheAll": "no"
+   }
   }
  ]
 }
