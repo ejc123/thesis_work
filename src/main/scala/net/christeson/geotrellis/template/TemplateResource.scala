@@ -8,7 +8,7 @@ import geotrellis.source.RasterSource
 
 import org.rogach.scallop._
 import Settings._
-import scala.collection.parallel.{mutable, ForkJoinTaskSupport}
+import scala.collection.parallel.mutable
 
 object Demo {
   val server = Server("demo", "src/main/resources/catalog.json")
@@ -58,13 +58,11 @@ object RunMe {
     import scalax.io.Resource
     implicit val codec = scalax.io.Codec.UTF8
 
-    import scala.util.Random
-
     try {
       for {
         year <- start to end
-        feature_year <- (year + prior) match {
-          case a if (a < year) => year to a by -1
+        feature_year <- year + prior match {
+          case a if a < year => year to a by -1
           case a => year to a
         }
       } yield {
@@ -82,13 +80,14 @@ object RunMe {
         val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
         val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
         // valid.tasksupport = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(4))
+        // import scala.util.Random
         // val tenPercent = Random.shuffle(valid.toList).take((valid.length * .10).toInt).toParArray
         // val tenPercent = valid.take(100)
         // val results = valid.flatMap { g =>
            val results = months.flatMap{
             month => {
-              val tileSet = RasterSource(conf.store(), s"${month}${year}NDVI_TOA_UTM14.TIF")
-              val mask = RasterSource(conf.store(), s"${month}${year}ACCA_State_UTM14")
+              val tileSet = RasterSource(store, s"${month}${year}NDVI_TOA_UTM14.TIF")
+              val mask = RasterSource(store, s"${month}${year}ACCA_State_UTM14")
               val foo = tileSet.localMask(mask,1,NODATA).run match {
                 case Complete(result,_) => RasterSource(result)
               }
