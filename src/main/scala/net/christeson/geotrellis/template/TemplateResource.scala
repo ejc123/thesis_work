@@ -17,7 +17,7 @@ object Demo {
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val start = opt[Int](required = true)
   val end = opt[Int](required = true)
-  val store = opt[String](default = Some("tiled"), required = true)
+  val store = opt[String](default = Some("notile"), required = true)
   val sat = opt[Int](required = true, default = Some(0))
   val prior = toggle(descrYes = "Use prior year for negative sample", descrNo = "Use next year for negative sample")
   val outputPath = opt[String](default = Some("/home/ejc"))
@@ -53,6 +53,7 @@ object RunMe {
     }
     val outputPath = conf.outputPath()
     val sat = conf.sat()
+    val store = conf.store()
 
     import scalax.io.Resource
     implicit val codec = scalax.io.Codec.UTF8
@@ -87,7 +88,7 @@ object RunMe {
            val results = months.flatMap{
             month => {
               val tileSet = RasterSource(conf.store(), s"${month}${year}NDVI_TOA_UTM14.TIF")
-              val mask = RasterSource(s"${month}${year}ACCA_State_UTM14")
+              val mask = RasterSource(conf.store(), s"${month}${year}ACCA_State_UTM14")
               val foo = tileSet.localMask(mask,1,NODATA).run match {
                 case Complete(result,_) => RasterSource(result)
               }
