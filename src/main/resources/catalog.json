@@ -5,7 +5,15 @@
    "store": "tiled",
    "params": {
      "type": "fs",
-     "path": "/home/ejc/geotrellis/data/tiled",
+     "path": "/mnt/data/tiled",
+     "cacheAll": "no"
+   }
+  },
+  {
+   "store": "notile",
+   "params": {
+     "type": "fs",
+     "path": "/mnt/data/notile",
      "cacheAll": "no"
    }
   }
