@@ -79,20 +79,26 @@ object RunMe {
         val geoJson = resource.mkString
         val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
         val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
-                tileSet.zonalMean(polygon).run match {
-                foo.zonalMean(polygon).run match {
-                  /*
-                  case Complete(result, _) => (coords, month, result) // { println(s"History: $foo"); (coords, month, result)}
-                  case _ => (coords, month, Array.empty[Int])
-                  */
-                  case Complete(result, _) => isNoData(result) match {
-                    case true => (coords, date, None)
-                    case false => (coords, date, Some(math.round(result)))
-                  }
-                  case _ => (coords, date, None)
-                }
-              }
+        val results = months.flatMap {
+          month => {
+            val tileSet = RasterSource(store, s"${month}${year}NDVI_TOA_UTM14")
+            val mask = RasterSource(store, s"${month}${year}ACCA_State_UTM14")
+            val tiles = tileSet.localMask(mask, 1, NODATA).run match {
+              case Complete(result, _) => RasterSource(result)
             }
+            valid.map {
+              g =>
+                val polygon = Polygon(g.geom, 0)
+                val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
+                tileSet.zonalMean(polygon).run match {
+                case Complete (result, _) => isNoData(result) match {
+                  case true => (coords, month, None)
+                  case false => (coords, month, Some(math.round(result)))
+                }
+                case _ => (coords, month, None)
+                }
+            }
+          }
         }
 
 println(s"results: ${results.length}")
