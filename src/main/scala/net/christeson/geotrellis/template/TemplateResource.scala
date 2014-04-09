@@ -81,16 +81,16 @@ object RunMe {
         val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
         val results = months.flatMap {
           month => {
-            val tileSet = RasterSource(store, s"${month}${year}NDVI_TOA_UTM14")
+            val raster = RasterSource(store, s"${month}${year}NDVI_TOA_UTM14")
             val mask = RasterSource(store, s"${month}${year}ACCA_State_UTM14")
-            val tiles = tileSet.localMask(mask, 1, NODATA).run match {
+            val masked = raster.localMask(mask, 1, NODATA).run match {
               case Complete(result, _) => RasterSource(result)
             }
             valid.map {
               g =>
                 val polygon = Polygon(g.geom, 0)
                 val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
-                tileSet.zonalMean(polygon).run match {
+                masked.zonalMean(polygon).run match {
                 case Complete (result, _) => isNoData(result) match {
                   case true => (coords, month, None)
                   case false => (coords, month, Some(math.round(result)))
