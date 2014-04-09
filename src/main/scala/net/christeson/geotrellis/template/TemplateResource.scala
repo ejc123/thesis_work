@@ -101,9 +101,7 @@ object RunMe {
             }
           }
         }
-
 println(s"results: ${results.length}")
-
         import java.io.PrintWriter
         val output = new PrintWriter(s"$outputPath/$year${outfile}_mean.txt")
         output.println(s"${heading(sat)(year)}")
