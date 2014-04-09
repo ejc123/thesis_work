@@ -104,7 +104,7 @@ object RunMe {
 println(s"results: ${results.length}")
 
         import java.io.PrintWriter
-        val output = new PrintWriter(s"$outputPath/$year$outfile.txt")
+        val output = new PrintWriter(s"$outputPath/$year$outfile_mean.txt")
         output.println(s"${heading(sat)(year)}")
         val monthSeq = months.seq
         val filtered = results.groupBy {
