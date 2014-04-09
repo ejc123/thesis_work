@@ -77,19 +77,21 @@ object RunMe {
         val featurePath = s"file:///mnt/data/${feature_year}_field_boundary_cropped.geojson"
         val resource = Resource.fromURL(featurePath).chars
         val geoJson = resource.mkString
-        val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
-        val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
+        // val geoms = Demo.server.get(io.LoadGeoJson(geoJson)).par
+        val valid = geotrellis.data.geojson.GeoJsonReader.parse(geoJson).get.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon").map {
+          g => (Polygon(g.geom,0), g.geom.getCentroid.getCoordinate)
+        }
+        // val valid = geoms.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon")
         val results = months.flatMap {
           month => {
             val raster = RasterSource(store, s"${month}${year}NDVI_TOA_UTM14")
             val mask = RasterSource(store, s"${month}${year}ACCA_State_UTM14")
-            val masked = raster.localMask(mask, 1, NODATA).run match {
-              case Complete(result, _) => RasterSource(result)
-            }
+            val masked = raster.localMask(mask, 1, NODATA).cached
             valid.map {
               g =>
-                val polygon = Polygon(g.geom, 0)
-                val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
+                val polygon = g._1
+                val coords = g._2
+        //        val coords = Demo.server.get(GetCentroid(polygon)).geom.getCoordinate
                 masked.zonalMean(polygon).run match {
                 case Complete (result, _) => isNoData(result) match {
                   case true => (coords, month, None)
