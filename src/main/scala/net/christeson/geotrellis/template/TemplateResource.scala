@@ -80,7 +80,7 @@ object RunMe {
         val geoJson = resource.mkString
         val valid = geotrellis.data.geojson.GeoJsonReader.parse(geoJson).get.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon").map {
           g => (Polygon(g.geom,0), g.geom.getCentroid.getCoordinate)
-        }
+        }.par
         val results = months.flatMap {
           month => {
             val raster = RasterSource(store, s"${month}${year}NDVI_TOA_UTM14")
@@ -89,13 +89,13 @@ object RunMe {
             val sources = valid.map {
               case (poly, coord) =>
                 masked.zonalMean(poly).map {
-                  result => if (isNoData(result)) (coord, month, None)
+                  result => if (isNoData(result)) (coord, month, "")
                   else
-                    (coord, month, Some(math.round(result)))
+                    (coord, month, math.round(result).toString)
                 }
             }
 
-            val ds = DataSource.fromSources(sources)
+            val ds = DataSource.fromSources(sources.seq)
             ds.run match {
               case Complete (result,_) => result
             }
@@ -110,14 +110,14 @@ println(s"results: ${results.length}")
         val monthSeq = months.seq
         val filtered = results.groupBy {
           case (coord, _, _) => coord
-        }.mapValues(values => values.foldLeft(mutable.ParMap.empty[String,Option[Long]])((a,b) => a += (b._2 -> b._3))).toList.sortBy(_._1.x)
+        }.mapValues(values => values.foldLeft(mutable.ParMap.empty[String,String])((a,b) => a += (b._2 -> b._3))).toList.sortBy(_._1.x)
         filtered.map(mess => {
           val datemap = mess._2
           val values = datemap.values
           // The limit on these fors should be the same for all the arrays
           // for (which <- 0 to values.head.length - 1) {
               output.print(s"${mess._1.x},${mess._1.y}")
-              monthSeq.map(date => output.print( s""",${fetch(datemap(date).getOrElse(NODATA))}"""))
+              monthSeq.map(date => output.print( s""",${datemap(date)}"""))
               output.println( s""","$positive"""")
           // }
         }
@@ -130,6 +130,4 @@ println(s"results: ${results.length}")
       Demo.server.shutdown()
     }
   }
-
-  @inline final def fetch(v: Long): String = if (isData(v)) v.toString else ""
 }
