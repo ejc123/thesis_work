@@ -109,16 +109,16 @@ println(s"results: ${results.length}")
         val monthSeq = months.seq
         val filtered = results.groupBy {
           case (coord, _, _) => coord
-        }.mapValues(values => values.foldLeft(mutable.ParMap.empty[String,Array[Int]])((a,b) => a += (b._2 -> b._3))).toList.sortBy(_._1.x)
+        }.mapValues(values => values.foldLeft(mutable.ParMap.empty[String,Option[Long]])((a,b) => a += (b._2 -> b._3))).toList.sortBy(_._1.x)
         filtered.map(mess => {
           val datemap = mess._2
           val values = datemap.values
           // The limit on these fors should be the same for all the arrays
-          for (which <- 0 to values.head.length - 1) {
+          // for (which <- 0 to values.head.length - 1) {
               output.print(s"${mess._1.x},${mess._1.y}")
-              monthSeq.map(date => output.print( s""",${fetch(datemap(date)(which))}"""))
+              monthSeq.map(date => output.print( s""",${fetch(datemap(date).getOrElse(NODATA))}"""))
               output.println( s""","$positive"""")
-          }
+          // }
         }
         )
         output.close()
@@ -130,5 +130,5 @@ println(s"results: ${results.length}")
     }
   }
 
-  @inline final def fetch(v: Int): String = if (isData(v)) v.toString else ""
+  @inline final def fetch(v: Long): String = if (isData(v)) v.toString else ""
 }
