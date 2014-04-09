@@ -33,9 +33,8 @@ object MyBuild extends Build {
       libraryDependencies ++= Seq(
         "org.scalatest"  % "scalatest_2.10"  % "2.0.M5b" % "test",
         "org.scala-lang" % "scala-reflect" % "2.10.4",
-        "com.azavea.geotrellis" %% "geotrellis" % "1.0.0-SNAPSHOT" % "compile",
-        "com.azavea.geotrellis" %% "geotrellis-geotools" % "1.0.0-SNAPSHOT" % "compile",
-        "com.azavea.geotrellis" %% "geotrellis-macros" % "1.0.0-SNAPSHOT" % "compile",
+        "com.azavea.geotrellis" %% "geotrellis" % "0.10.0-SNAPSHOT" % "compile",
+        "com.azavea.geotrellis" %% "geotrellis-geotools" % "0.10.0-SNAPSHOT" % "compile",
         "junit" % "junit" % "4.5" % "test",
         "org.rogach" %% "scallop" % "0.9.5-91c1a-SNAPSHOT",
         "com.github.scala-incubator.io" %% "scala-io-core" % "0.4.2",
