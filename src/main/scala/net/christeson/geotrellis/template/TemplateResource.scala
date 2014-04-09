@@ -109,9 +109,7 @@ object RunMe {
           case Complete(results: Seq[Seq[(Coordinate, String, String)]], _) => results.flatten
           case _ => sys.error("Major Error Occurred")
         }
-
 println(s"results: ${results.length}")
-
         import java.io.PrintWriter
         val output = new PrintWriter(s"$outputPath/$year${outfile}_mean.txt")
         output.println(s"${heading(sat)(year)}")
