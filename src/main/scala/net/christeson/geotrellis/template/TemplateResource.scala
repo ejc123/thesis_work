@@ -80,26 +80,34 @@ object RunMe {
         val geoJson = resource.mkString
         val valid = geotrellis.data.geojson.GeoJsonReader.parse(geoJson).get.filter(node => node.geom.isValid && node.geom.getGeometryType == "Polygon").map {
           g => (Polygon(g.geom,0), g.geom.getCentroid.getCoordinate)
-        }.par
-        val results = months.flatMap {
-          month => {
-            val raster = RasterSource(store, s"${month}${year}NDVI_TOA_UTM14")
-            val mask = RasterSource(store, s"${month}${year}ACCA_State_UTM14")
-            val masked = raster.localMask(mask, 1, NODATA).cached
-            val sources = valid.map {
-              case (poly, coord) =>
-                masked.zonalMean(poly).map {
-                  result => if (isNoData(result)) (coord, month, "")
-                  else
-                    (coord, month, math.round(result).toString)
-                }
-            }
+        }
 
-            val ds = DataSource.fromSources(sources.seq)
-            ds.run match {
-              case Complete (result,_) => result
-            }
+        val monthSources: Seq[SeqSource[(Coordinate, String, String)]] = months.map { month =>
+          val raster = RasterSource(store, s"${month}${year}NDVI_TOA_UTM14")
+          val mask = RasterSource(store, s"${month}${year}ACCA_State_UTM14")
+          val masked = raster.localMask(mask, 1, NODATA).cached
+          val sources = valid.map {
+            case (poly, coord) =>
+              masked.zonalMean(poly).map {
+                result => if (isNoData(result)) (coord, month, "")
+                else
+                  (coord, month, math.round(result).toString)
+              }
           }
+
+          DataSource.fromSources(sources)
+        /*
+          ds.run match {
+            case Complete (result,_) => result
+          }
+        */
+        }
+
+        val ds: SeqSource[Seq[(Coordinate, String, String)]] = DataSource.fromSources(monthSources)
+
+        val results = ds.run match {
+          case Complete(results: Seq[Seq[(Coordinate, String, String)]], _) => results.flatten
+          case _ => sys.error("Major Error Occurred")
         }
 
 println(s"results: ${results.length}")

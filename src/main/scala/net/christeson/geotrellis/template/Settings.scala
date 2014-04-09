@@ -28,7 +28,7 @@ object Settings {
     2011 -> Map("LAT" -> "LAT", "LON" -> "LONG")
   )
 
-  val months = List("04","05","06","07","08","09","10").par
+  val months = Seq("04","05","06","07","08","09","10")
 
   val heading = Map(
     0 -> Map(
